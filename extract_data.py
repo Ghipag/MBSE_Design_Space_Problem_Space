@@ -240,6 +240,52 @@ def process_method_data(data):
 
     run_neo_query(tool_data,query)
 
+def process_issue_data(data):
+    issue_data = data[['Name','Summary','Affected_Aspects', 'Severity', 'Workaround']]
+    issue_data =  issue_data.dropna()
+
+    # Convert data frame to list of dictionaries
+    # Neo4j UNWIND query expects a list of dictionaries
+    # for bulk insertion
+    issue_data = list(issue_data.T.to_dict().values())
+    print(issue_data)
+
+    query = """
+            UNWIND $rows AS row
+
+            MERGE (issue:Issue {uid:row.Name})
+            SET 
+                issue.Summary = row.Summary,
+                issue.Severity = row.Severity,
+                issue.Workaround = row.Workaround
+        """
+
+    run_neo_query(issue_data,query)
+
+    #adding relationships to affected aspects
+    aspect_data = data[['Name','Affected_Aspects']]
+    aspect_data = aspect_data.dropna()
+
+    s = aspect_data['Affected_Aspects'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Affected_Aspects"
+    del aspect_data["Affected_Aspects"]
+    s = s.to_frame().reset_index()
+    aspect_data = pd.merge(aspect_data, s, right_on='level_0', left_index = True)
+
+    del aspect_data["level_0"]
+    del aspect_data["level_1"]
+    aspect_data = list(aspect_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (issue:Issue {uid:row.Name})
+           MERGE (aspect {uid:row.Affected_Aspects})
+           CREATE (issue)-[r:AVAILABLE_IN]->(aspect)
+           
+       """
+
+    run_neo_query(aspect_data,query)
+
 def run_neo_query(data, query):
     batches = get_batches(data)
 
@@ -260,3 +306,5 @@ if __name__== "__main__":
     process_tool_data(tool_data)
     method_data = read_data('Methods')
     process_method_data(method_data)
+    issue_data = read_data('Issues')
+    process_issue_data(issue_data)
