@@ -12,24 +12,24 @@ from py2neo import Graph
 graph = Graph("bolt://127.0.0.1:7687", auth=('neo4j', 'test'))
 
 # Add uniqueness constraints.
-graph.run("CREATE CONSTRAINT FOR (p:Person) REQUIRE p.uid IS UNIQUE;")
-graph.run("CREATE CONSTRAINT FOR (c:Country) REQUIRE c.name IS UNIQUE;")
-graph.run("CREATE CONSTRAINT FOR (m:MajorStream) REQUIRE m.name IS UNIQUE;")
-graph.run("CREATE CONSTRAINT FOR (w:WorkType) REQUIRE w.name IS UNIQUE;")
+#graph.run("CREATE CONSTRAINT FOR (l:Language) REQUIRE l.uid IS UNIQUE;")
+#graph.run("CREATE CONSTRAINT FOR (t:Tool) REQUIRE t.uid IS UNIQUE;")
+#graph.run("CREATE CONSTRAINT FOR (m:MajorStream) REQUIRE m.name IS UNIQUE;")
+#graph.run("CREATE CONSTRAINT FOR (w:WorkType) REQUIRE w.name IS UNIQUE;")
 
 
 
-def read_data():
+def read_data(name):
     data = pd.read_csv(
 
-        "./data/survey_results_public.csv",
+        f"./data/{name}_info.csv",
         low_memory=False)
     print("Column name of data : ", data.columns)
     return data
 
 
-def process_user_data(data):
-    user_data = data[['Respondent','Hobby', 'OpenSource', 'Student', 'Employment', 'CompanySize', 'YearsCoding']]
+def process_language_data(data):
+    user_data = data[['Name','Developer','Year_of_latest_release', 'Tool', 'Method', 'Variability_Modelling', 'Simulation_Links', 'Customisation']]
     user_data =  user_data.dropna()
 
     # Convert data frame to list of dictionaries
@@ -41,69 +41,87 @@ def process_user_data(data):
     query = """
             UNWIND $rows AS row
 
-            MERGE (person:Person {uid:row.Respondent})
+            MERGE (language:Language {uid:row.Name})
             ON CREATE SET 
-                person.codes_as_hobby = row.Hobby,
-                person.contributes_to_open_source = row.OpenSource,
-                person.is_student = row.Student,
-                person.employment_status = row.Employment,
-                person.company_size = row.CompanySize,
-                person.total_years_of_coding_experience = row.YearsCoding
+                language.Developer = row.Developer,
+                language.Year_of_latest_release = row.Year_of_latest_release,
+                language.Tool = row.Tool,
+                language.Method = row.Method,
+                language.Variability_Modelling = row.Variability_Modelling,
+                language.Simulation_Links = row.Simulation_Links,
+                language.Customisation = row.Customisation
+            MERGE (tool:Tool {uid:row.Tool})
+            CREATE (language)-[r:AVAILABLE_IN]->(tool)
+            MERGE (method:Method {uid:row.Method})
+            CREATE (tool)-[r1:CAN_FOLLOW]->(method)
         """
 
     run_neo_query(user_data,query)
 
+def process_tool_data(data):
+    user_data = data[['Name','Developer','Year_of_latest_release', 'Language', 'Method', 'Simulation', 'Customisation']]
+    user_data =  user_data.dropna()
 
-def process_country_data(data):
-    country_data = data[['Respondent', 'Country']]
-    country_data = country_data.dropna()
-    country_data = list(country_data.T.to_dict().values())
-
-    query = """
-           UNWIND $rows AS row
-           MERGE (person:Person {uid:row.Respondent})
-           MERGE (country:Country {name:row.Country})
-           MERGE (person)-[:LIVES_IN]->(country)
-       """
-    run_neo_query(country_data,query)
-
-
-def process_major_data(data):
-    major_data = data[['Respondent', 'UndergradMajor']]
-    major_data = major_data.dropna()
-    major_data = list(major_data.T.to_dict().values())
+    # Convert data frame to list of dictionaries
+    # Neo4j UNWIND query expects a list of dictionaries
+    # for bulk insertion
+    user_data = list(user_data.T.to_dict().values())
+    print(user_data)
 
     query = """
             UNWIND $rows AS row
-            MERGE (person:Person {uid:row.Respondent})
-            MERGE (major:MajorStream {name:row.UndergradMajor})
-            MERGE (person)-[:MAJORED_IN]->(major)
+
+            MERGE (tool:Tool {uid:row.Name})
+            ON CREATE SET 
+                tool.Developer = row.Developer,
+                tool.Year_of_latest_release = row.Year_of_latest_release,
+                tool.Language = row.Language,
+                tool.Method = row.Method,
+                tool.Simulation_Links = row.Simulation_Links,
+                tool.Customisation = row.Customisation
         """
-    run_neo_query(major_data,query)
 
+    run_neo_query(user_data,query)
+    query = """
+            MERGE (language:Language {uid:row.Language})
+            CREATE (tool)-[r:CAN_USE]->(language)
+        """
+        
+    run_neo_query(user_data,query)
+    query = """
+            MERGE (method:Method {uid:row.Method})
+            CREATE (language)-[r1:CAN_BE_IMPLEMENTED_IN]->(method)
+        """
 
-def process_dev_data(data):
-    dev_data = data[['Respondent', 'DevType']]
-    dev_data = dev_data.dropna()
+    run_neo_query(user_data,query)
 
-    s = dev_data['DevType'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "DevType"
-    del dev_data["DevType"]
-    s = s.to_frame().reset_index()
-    dev_data = pd.merge(dev_data, s, right_on='level_0', left_index = True)
+def process_method_data(data):
+    user_data = data[['Name','Developer','Year_of_latest_release', 'Language', 'Tool', 'Design_Space_Exploration']]
+    user_data =  user_data.dropna()
 
-    del dev_data["level_0"]
-    del dev_data["level_1"]
-    dev_data = list(dev_data.T.to_dict().values())
+    # Convert data frame to list of dictionaries
+    # Neo4j UNWIND query expects a list of dictionaries
+    # for bulk insertion
+    user_data = list(user_data.T.to_dict().values())
+    print(user_data)
 
     query = """
-           UNWIND $rows AS row
-           MERGE (person:Person {uid:row.Respondent})
-           MERGE (work:WorkType {name:row.DevType})
-           MERGE (person)-[:WORKS_IN_INDUSTRY]->(work)
-           
-       """
-    run_neo_query(dev_data,query)
+            UNWIND $rows AS row
+
+            MERGE (method:Method {uid:row.Name})
+            ON CREATE SET 
+                method.Developer = row.Developer,
+                method.Year_of_latest_release = row.Year_of_latest_release,
+                method.Language = row.Language,
+                method.Tool = row.Tool,
+                method.Design_Space_Exploration = row.Design_Space_Exploration
+            MERGE (language:Language {uid:row.Language})
+            CREATE (method)-[r:CAN_BE_WRITTEN_IN]->(language)
+            MERGE (tool:Tool {uid:row.Tool})
+            CREATE (method)-[r2:CAN_BE_PERFORMED_IN]->(tool)
+        """
+
+    run_neo_query(user_data,query)
 
 
 def run_neo_query(data, query):
@@ -120,8 +138,9 @@ def get_batches(lst, batch_size=100):
 
 
 if __name__== "__main__":
-    data = read_data()
-    process_user_data(data)
-    process_country_data(data)
-    process_major_data(data)
-    process_dev_data(data)
+    language_data = read_data('Languages')
+    process_language_data(language_data)
+    #tool_data = read_data('Tools')
+    #process_tool_data(tool_data)
+    #method_data = read_data('Methods')
+    #process_method_data(method_data)
