@@ -3,7 +3,9 @@ ARCADIA,Ecplise/Thales,IDK,Capella Language,Capella,limited
 OOSEM,Lockheed Martin and (SSCI),IDK,SysML V1,Flexible,limited
 RePoSyD,RePoSyD,IDK,RML,RePoSyD,Limited
 STRATA,Vitech,IDK,SDL,GENSYS,limited
-OPM,OPM,IDK,OPM Language,OPMcloud,limited
+OPM,OPM,IDK,OPM Language,OPMCloud,limited
 Valispace Method,Valispace,IDK,Valispace language,Valispace,Limited
 MOFLT,Airbus,IDK,SysML V1,Flexible,Limited- but has tailoring in mind
 COMPASS,COMPASS,IDK,SLIM,COMPASS 3.0,Limited
+SEAM,University of Bristol,2022,SysML V1,Cameo,Limited
+TASTE Method,TASTE,IDK,SDL;AADL,TASTE,Limited

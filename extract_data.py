@@ -14,7 +14,7 @@ graph = Graph("bolt://127.0.0.1:7687", auth=('neo4j', 'test'))
 # Add uniqueness constraints.
 #graph.run("CREATE CONSTRAINT FOR (l:Language) REQUIRE l.uid IS UNIQUE;")
 #graph.run("CREATE CONSTRAINT FOR (t:Tool) REQUIRE t.uid IS UNIQUE;")
-#graph.run("CREATE CONSTRAINT FOR (m:MajorStream) REQUIRE m.name IS UNIQUE;")
+#graph.run("CREATE CONSTRAINT FOR (m:Method) REQUIRE m.uid IS UNIQUE;")
 #graph.run("CREATE CONSTRAINT FOR (w:WorkType) REQUIRE w.name IS UNIQUE;")
 
 
@@ -29,100 +29,216 @@ def read_data(name):
 
 
 def process_language_data(data):
-    user_data = data[['Name','Developer','Year_of_latest_release', 'Tool', 'Method', 'Variability_Modelling', 'Simulation_Links', 'Customisation']]
-    user_data =  user_data.dropna()
+    language_data = data[['Name','Developer','Year_of_latest_release', 'Variability_Modelling', 'Simulation_Links', 'Customisation']]
+    language_data =  language_data.dropna()
 
     # Convert data frame to list of dictionaries
     # Neo4j UNWIND query expects a list of dictionaries
     # for bulk insertion
-    user_data = list(user_data.T.to_dict().values())
-    print(user_data)
+    language_data = list(language_data.T.to_dict().values())
+    print(language_data)
 
     query = """
             UNWIND $rows AS row
 
             MERGE (language:Language {uid:row.Name})
-            ON CREATE SET 
+            SET 
                 language.Developer = row.Developer,
                 language.Year_of_latest_release = row.Year_of_latest_release,
-                language.Tool = row.Tool,
-                language.Method = row.Method,
                 language.Variability_Modelling = row.Variability_Modelling,
                 language.Simulation_Links = row.Simulation_Links,
                 language.Customisation = row.Customisation
-            MERGE (tool:Tool {uid:row.Tool})
-            CREATE (language)-[r:AVAILABLE_IN]->(tool)
-            MERGE (method:Method {uid:row.Method})
-            CREATE (tool)-[r1:CAN_FOLLOW]->(method)
         """
 
-    run_neo_query(user_data,query)
+    run_neo_query(language_data,query)
+
+    # adding relationships to available tools
+    tool_data = data[['Name','Tool']]
+    tool_data =  tool_data.dropna()
+
+    s = tool_data['Tool'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Tool"
+    del tool_data["Tool"]
+    s = s.to_frame().reset_index()
+    tool_data = pd.merge(tool_data, s, right_on='level_0', left_index = True)
+
+    del tool_data["level_0"]
+    del tool_data["level_1"]
+    tool_data = list(tool_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (language:Language {uid:row.Name})
+           MERGE (tool:Tool {uid:row.Tool})
+           CREATE (language)-[r:AVAILABLE_IN]->(tool)
+           
+       """
+
+    run_neo_query(tool_data,query)
+
+    # adding relationships to available methods
+    method_data = data[['Name','Method']]
+    method_data =  method_data.dropna()
+
+    s = method_data['Method'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Method"
+    del method_data["Method"]
+    s = s.to_frame().reset_index()
+    method_data = pd.merge(method_data, s, right_on='level_0', left_index = True)
+
+    del method_data["level_0"]
+    del method_data["level_1"]
+    method_data = list(method_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (language:Language {uid:row.Name})
+           MERGE (method:Method {uid:row.Method})
+           CREATE (language)-[r:CAN_FOLLOW]->(method)
+           
+       """
+
+    run_neo_query(method_data,query)
 
 def process_tool_data(data):
-    user_data = data[['Name','Developer','Year_of_latest_release', 'Language', 'Method', 'Simulation', 'Customisation']]
-    user_data =  user_data.dropna()
+    tool_data = data[['Name','Developer','Year_of_latest_release', 'Simulation', 'Customisation']]
+    tool_data =  tool_data.dropna()
 
     # Convert data frame to list of dictionaries
     # Neo4j UNWIND query expects a list of dictionaries
     # for bulk insertion
-    user_data = list(user_data.T.to_dict().values())
-    print(user_data)
+    tool_data = list(tool_data.T.to_dict().values())
+    print(tool_data)
 
     query = """
             UNWIND $rows AS row
 
             MERGE (tool:Tool {uid:row.Name})
-            ON CREATE SET 
+            SET 
                 tool.Developer = row.Developer,
                 tool.Year_of_latest_release = row.Year_of_latest_release,
-                tool.Language = row.Language,
-                tool.Method = row.Method,
                 tool.Simulation_Links = row.Simulation_Links,
                 tool.Customisation = row.Customisation
         """
 
-    run_neo_query(user_data,query)
-    query = """
-            MERGE (language:Language {uid:row.Language})
-            CREATE (tool)-[r:CAN_USE]->(language)
-        """
-        
-    run_neo_query(user_data,query)
-    query = """
-            MERGE (method:Method {uid:row.Method})
-            CREATE (language)-[r1:CAN_BE_IMPLEMENTED_IN]->(method)
-        """
+    run_neo_query(tool_data,query)
 
-    run_neo_query(user_data,query)
+    # adding relationships to available languages
+    language_data = data[['Name','Language']]
+    language_data =  language_data.dropna()
+
+    s = language_data['Language'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Language"
+    del language_data["Language"]
+    s = s.to_frame().reset_index()
+    language_data = pd.merge(language_data, s, right_on='level_0', left_index = True)
+
+    del language_data["level_0"]
+    del language_data["level_1"]
+    language_data = list(language_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (tool:Tool {uid:row.Name})
+           MERGE (language:Language {uid:row.Language})
+           CREATE (tool)-[r:CAN_USE]->(language)
+           
+       """
+
+    run_neo_query(language_data,query)
+
+    # adding relationships to available methods
+    method_data = data[['Name','Method']]
+    method_data =  method_data.dropna()
+
+    s = method_data['Method'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Method"
+    del method_data["Method"]
+    s = s.to_frame().reset_index()
+    method_data = pd.merge(method_data, s, right_on='level_0', left_index = True)
+
+    del method_data["level_0"]
+    del method_data["level_1"]
+    method_data = list(method_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (tool:Tool {uid:row.Name})
+           MERGE (method:Method {uid:row.Method})
+           CREATE (tool)-[r:CAN_IMPLEMENT]->(method)
+       """
+
+    run_neo_query(method_data,query)
 
 def process_method_data(data):
-    user_data = data[['Name','Developer','Year_of_latest_release', 'Language', 'Tool', 'Design_Space_Exploration']]
-    user_data =  user_data.dropna()
+    method_data = data[['Name','Developer','Year_of_latest_release', 'Design_Space_Exploration']]
+    method_data =  method_data.dropna()
 
     # Convert data frame to list of dictionaries
     # Neo4j UNWIND query expects a list of dictionaries
     # for bulk insertion
-    user_data = list(user_data.T.to_dict().values())
-    print(user_data)
+    method_data = list(method_data.T.to_dict().values())
+    print(method_data)
 
     query = """
             UNWIND $rows AS row
 
             MERGE (method:Method {uid:row.Name})
-            ON CREATE SET 
+            SET 
                 method.Developer = row.Developer,
                 method.Year_of_latest_release = row.Year_of_latest_release,
-                method.Language = row.Language,
-                method.Tool = row.Tool,
                 method.Design_Space_Exploration = row.Design_Space_Exploration
-            MERGE (language:Language {uid:row.Language})
-            CREATE (method)-[r:CAN_BE_WRITTEN_IN]->(language)
-            MERGE (tool:Tool {uid:row.Tool})
-            CREATE (method)-[r2:CAN_BE_PERFORMED_IN]->(tool)
         """
 
-    run_neo_query(user_data,query)
+    run_neo_query(method_data,query)
 
+    # adding relationships to available languages
+    language_data = data[['Name','Language']]
+    language_data =  language_data.dropna()
+
+    s = language_data['Language'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Language"
+    del language_data["Language"]
+    s = s.to_frame().reset_index()
+    language_data = pd.merge(language_data, s, right_on='level_0', left_index = True)
+
+    del language_data["level_0"]
+    del language_data["level_1"]
+    language_data = list(language_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (method:Method {uid:row.Name})
+           MERGE (language:Language {uid:row.Language})
+           CREATE (method)-[r:CAN_BE_WRITTEN_IN]->(language)
+           
+       """
+
+    run_neo_query(language_data,query)
+
+    # adding relationships to available tools
+    tool_data = data[['Name','Tool']]
+    tool_data =  tool_data.dropna()
+
+    s = tool_data['Tool'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Tool"
+    del tool_data["Tool"]
+    s = s.to_frame().reset_index()
+    tool_data = pd.merge(tool_data, s, right_on='level_0', left_index = True)
+
+    del tool_data["level_0"]
+    del tool_data["level_1"]
+    tool_data = list(tool_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (method:Method {uid:row.Name})
+           MERGE (tool:Tool {uid:row.Tool})
+           CREATE (method)-[r:AVAILABLE_IN]->(tool)
+           
+       """
+
+    run_neo_query(tool_data,query)
 
 def run_neo_query(data, query):
     batches = get_batches(data)
@@ -140,7 +256,7 @@ def get_batches(lst, batch_size=100):
 if __name__== "__main__":
     language_data = read_data('Languages')
     process_language_data(language_data)
-    #tool_data = read_data('Tools')
-    #process_tool_data(tool_data)
-    #method_data = read_data('Methods')
-    #process_method_data(method_data)
+    tool_data = read_data('Tools')
+    process_tool_data(tool_data)
+    method_data = read_data('Methods')
+    process_method_data(method_data)

@@ -1,12 +1,12 @@
 Name,Developer,Year_of_latest_release,Language,Method,Simulation,Customisation
-Cameo,Dassault,IDK,SysML V1,Flexible,Good (though can be slow),"Closed source , Open API, custom plugins"
+Cameo,Dassault,IDK,SysML V1;UML,OOSEM;SEAM;MOFLT,Good (though can be slow),"Closed source , Open API, custom plugins"
 Capella,Eclipse,IDK,Capella Language,ARCADIA,Limited (reliant on third party tools),Open Source
-Papyrus,Eclipse,IDK,SysML V1,Flexible,None,Open Source
-Valispace,Valispace,IDK,Valispace language,Valispace,Parametrics,"Web based,Closed source"
-Rapsody,IBM,IDK,SysML V1,Flexible,"Moderate, reliant on MATLAB/simulink",Closed source
-Enterprise Architect,Sparx,IDK,SysML V1,Flexible,Can simulate behavioural diagrams,Closed source
+Papyrus,Eclipse,IDK,SysML V1;UML,OOSEM;SEAM;MOFLT,None,Open Source
+Valispace,Valispace,IDK,Valispace language,Valispace Method,Parametrics,"Web based,Closed source"
+Rapsody,IBM,IDK,SysML V1;UML,OOSEM;SEAM;MOFLT,"Moderate, reliant on MATLAB/simulink",Closed source
+Enterprise Architect,Sparx,IDK,SysML V1;UML,OOSEM;SEAM;MOFLT,Can simulate behavioural diagrams,Closed source
 OPMCloud,OPMCloud,IDK,OPM Language,OPM,"Limited animation style simulation, some optimisation tools inbuilt","Web based, closed source"
 GENSYS,GENSYS,IDK,SDL,STRATA,System behavioural simulation,Closed source
 RePoSyD,RePoSyD,IDK,RePoSyD Language,RePoSyD,Limited,Open source
-TASTE,ESA,IDK,SDL,Flexible,System behavioural simulation and testing for validation,Open Source
+TASTE,ESA,IDK,SDL;AADL,TASTE Method,System behavioural simulation and testing for validation,Open Source
 COMPASS 3.0,COMPASS/ESA,IDK,SLIM,COMPASS,"Performability analysis and others, focussed on safety and correctness",CLI interface and some open source aspects

@@ -1,11 +1,11 @@
 Name,Developer,Year_of_latest_release,Tool,Method,Variability_Modelling,Simulation_Links,Customisation
-UML,OMG,IDK,Flexible,Flexible,None inbuilt,Good (though can be slow),Can be extended via profiles
-SysML V1,OMG,IDK,Flexible,Flexible,Limited/none,Good (though can be slow),Can be extended via profiles
-SysML V2,OMG (Future release),IDK,Flexible,Flexible,Product line engineering and variability points,Good (though can be slow),Can be extended via extensible model libraries
+UML,OMG,IDK,Cameo;Enterprise Architect;Papyrus;Rapsody,OOSEM,None inbuilt,Good (though can be slow),Can be extended via profiles
+SysML V1,OMG,IDK,Cameo;Enterprise Architect;Papyrus;Rapsody,OOSEM;SEAM;MOFLT,Limited/none,Good (though can be slow),Can be extended via profiles
+SysML V2,OMG (Future release),IDK,Future Tools,Future Methods,Product line engineering and variability points,Good (though can be slow),Can be extended via extensible model libraries
 Capella Language,Eclipse,IDK,Capella,ARCADIA,None inbuilt,Limited (on third party tools),Open Source
-OPM Language,OPM/ISO,IDK,Flexible,OPM,Limited/none,"Animation,",Limited
-SDL,Vitech,IDK,GENSYS,STRATA,Limited/none,Behaviour simulation in GENSYS,Is extensible
-Valispace language,Valispace,IDK,Valispace,Valispace,Limited/none,Parametric,"Web based, has API"
+OPM Language,OPM/ISO,IDK,OPMCloud,OPM,Limited/none,"Animation,",Limited
+SDL,Vitech,IDK,GENSYS;TASTE,STRATA,Limited/none,Behaviour simulation in GENSYS,Is extensible
+Valispace language,Valispace,IDK,Valispace,Valispace Method,Limited/none,Parametric,"Web based, has API"
 RePoSyD Language,RePoSyD,IDK,RePoSyD,RePoSyD,Limited/none,Limited/none,Open source
-AADL,"SAE,2022",IDK,Flexible,Flexible,Limited/none,"Can be simulated,e.g. in TASTE for model base verification",can be extended via language annexes
+AADL,"SAE,2022",IDK,TASTE,TASTE Method,Limited/none,"Can be simulated,e.g. in TASTE for model base verification",can be extended via language annexes
 SLIM,COMPASS,IDK,COMPASS 3.0,COMPASS,Limited/none,"Performability analysis and others, focussed on safety and correctness",limited
