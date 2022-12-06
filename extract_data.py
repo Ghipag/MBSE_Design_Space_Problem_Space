@@ -240,6 +240,30 @@ def process_method_data(data):
 
     run_neo_query(tool_data,query)
 
+    # adding relationships to generated artifacts
+    artifacts_data = data[['Name','Artifacts']]
+    artifacts_data =  artifacts_data.dropna()
+
+    s = artifacts_data['Artifacts'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Artifacts"
+    del artifacts_data["Artifacts"]
+    s = s.to_frame().reset_index()
+    artifacts_data = pd.merge(artifacts_data, s, right_on='level_0', left_index = True)
+
+    del artifacts_data["level_0"]
+    del artifacts_data["level_1"]
+    artifacts_data = list(artifacts_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (method:Method {uid:row.Name})
+           MERGE (artifact:Artifact {uid:row.Artifacts})
+           CREATE (method)-[r:GENERATES]->(artifact)
+           
+       """
+
+    run_neo_query(artifacts_data,query)
+
 def process_issue_data(data):
     issue_data = data[['Name','Summary','Affected_Aspects', 'Severity', 'Workaround']]
     issue_data =  issue_data.dropna()
@@ -286,6 +310,101 @@ def process_issue_data(data):
 
     run_neo_query(aspect_data,query)
 
+def process_technique_data(data):
+    technique_data = data[['Name','Summary','Variability_Type', 'Adv', 'Disadv']]
+    technique_data =  technique_data.dropna()
+
+    # Convert data frame to list of dictionaries
+    # Neo4j UNWIND query expects a list of dictionaries
+    # for bulk insertion
+    technique_data = list(technique_data.T.to_dict().values())
+    print(technique_data)
+
+    query = """
+            UNWIND $rows AS row
+
+            MERGE (technique:Technique {uid:row.Name})
+            SET 
+                technique.Summary = row.Summary,
+                technique.Variability_Type = row.Variability_Type,
+                technique.Adv = row.Adv,
+                technique.Disadv = row.Disadv
+        """
+
+    run_neo_query(technique_data,query)
+
+    #adding relationships to inputs
+    input_data = data[['Name','Inputs']]
+    input_data = input_data.dropna()
+
+    s = input_data['Inputs'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Inputs"
+    del input_data["Inputs"]
+    s = s.to_frame().reset_index()
+    input_data = pd.merge(input_data, s, right_on='level_0', left_index = True)
+
+    del input_data["level_0"]
+    del input_data["level_1"]
+    input_data = list(input_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (technique:Technique {uid:row.Name})
+           MERGE (artifact:Artifact {uid:row.Inputs})
+           CREATE (technique)-[r:TAKES_INPUT]->(artifact)
+           
+       """
+
+    run_neo_query(input_data,query)
+
+    #adding relationships to outputs
+    output_data = data[['Name','Outputs']]
+    output_data = output_data.dropna()
+
+    s = output_data['Outputs'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Outputs"
+    del output_data["Outputs"]
+    s = s.to_frame().reset_index()
+    output_data = pd.merge(output_data, s, right_on='level_0', left_index = True)
+
+    del output_data["level_0"]
+    del output_data["level_1"]
+    output_data = list(output_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (technique:Technique {uid:row.Name})
+           MERGE (artifact:Artifact {uid:row.Outputs})
+           CREATE (technique)-[r:CREATS_OUTPUT]->(artifact)
+           
+       """
+
+    run_neo_query(output_data,query)
+
+    #adding relationships to solved issues
+    solves_data = data[['Name','Solves']]
+    solves_data = solves_data.dropna()
+
+    s = solves_data['Solves'].str.split(';').apply(pd.Series, 1).stack()
+    s.name = "Solves"
+    del solves_data["Solves"]
+    s = s.to_frame().reset_index()
+    solves_data = pd.merge(solves_data, s, right_on='level_0', left_index = True)
+
+    del solves_data["level_0"]
+    del solves_data["level_1"]
+    solves_data = list(solves_data.T.to_dict().values())
+
+    query = """
+           UNWIND $rows AS row
+           MERGE (technique:Technique {uid:row.Name})
+           MERGE (issue:Issue {uid:row.Solves})
+           CREATE (technique)-[r:SOLVES]->(issue)
+           
+       """
+
+    run_neo_query(solves_data,query)
+
 def run_neo_query(data, query):
     batches = get_batches(data)
 
@@ -298,13 +417,18 @@ def run_neo_query(data, query):
 def get_batches(lst, batch_size=100):
     return [(i, lst[i:i + batch_size]) for i in range(0, len(lst), batch_size)]
 
+def main():
+    if __name__== "__main__":
+        language_data = read_data('Languages')
+        process_language_data(language_data)
+        tool_data = read_data('Tools')
+        process_tool_data(tool_data)
+        method_data = read_data('Methods')
+        process_method_data(method_data)
+        issue_data = read_data('Issues')
+        process_issue_data(issue_data)
+        technique_data = read_data('Techniques')
+        process_technique_data(technique_data)
 
-if __name__== "__main__":
-    language_data = read_data('Languages')
-    process_language_data(language_data)
-    tool_data = read_data('Tools')
-    process_tool_data(tool_data)
-    method_data = read_data('Methods')
-    process_method_data(method_data)
-    issue_data = read_data('Issues')
-    process_issue_data(issue_data)
+if __name__ == "__main__":
+    main()

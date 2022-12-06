@@ -1,0 +1,5 @@
+Name,Developer/Year of latest release,Language,Customisation
+Modelica,Modelica,Modelica,Open Source
+Simulink,MathWorks,Simulink,Closed Source
+Collimator,Collimator,Collimator (strong coupling with Python),Closed Source (limited python API)
+Cameo Simulation Toolkit,Cameo,Sys/ML V1;UML,Open API
