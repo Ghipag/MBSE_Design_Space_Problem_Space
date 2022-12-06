@@ -2,7 +2,7 @@ Name,Developer,Year_of_latest_release,Language,Method,Simulation,Customisation
 Cameo,Dassault,IDK,SysML V1;UML,OOSEM;SEAM;MOFLT,Good (though can be slow),"Closed source , Open API, custom plugins"
 Capella,Eclipse,IDK,Capella Language,ARCADIA,Limited (reliant on third party tools),Open Source
 Papyrus,Eclipse,IDK,SysML V1;UML,OOSEM;SEAM;MOFLT,None,Open Source
-Valispace,Valispace,IDK,Valispace language,Valispace Method,Parametrics,"Web based,Closed source"
+Valispace,Valispace,IDK,Valispace Language,Valispace Method,Parametrics,"Web based,Closed source"
 Rapsody,IBM,IDK,SysML V1;UML,OOSEM;SEAM;MOFLT,"Moderate, reliant on MATLAB/simulink",Closed source
 Enterprise Architect,Sparx,IDK,SysML V1;UML,OOSEM;SEAM;MOFLT,Can simulate behavioural diagrams,Closed source
 OPMCloud,OPMCloud,IDK,OPM Language,OPM,"Limited animation style simulation, some optimisation tools inbuilt","Web based, closed source"
