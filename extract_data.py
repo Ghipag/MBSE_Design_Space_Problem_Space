@@ -27,6 +27,50 @@ def read_data(name):
     print("Column name of data : ", data.columns)
     return data
 
+def process_relationships(data,sourceType,targetKey,targetType,relationshipName,direction):
+    # adding relationships to available tools
+    relation_data = data[['Name',targetKey]]
+    relation_data =  relation_data.dropna()
+
+    s = relation_data[targetKey].str.split(';').apply(pd.Series, 1).stack()
+    s.name = targetKey
+    del relation_data[targetKey]
+    s = s.to_frame().reset_index()
+    relation_data = pd.merge(relation_data, s, right_on='level_0', left_index = True)
+
+    del relation_data["level_0"]
+    del relation_data["level_1"]
+    relation_data = list(relation_data.T.to_dict().values())
+
+    if direction == "OUTGOING":
+        query = """
+            UNWIND $rows AS row
+            MERGE (source:"""+ sourceType + """ {uid:row.Name})
+            MERGE (target:"""+ targetType + """ {uid:row."""+targetKey+"""})
+            CREATE (source)-[r:"""+ relationshipName+"""]->(target)
+                    SET r.Number_of_related_issues = 0         
+        """
+    else:
+        query = """
+            UNWIND $rows AS row
+            MERGE (source:"""+ sourceType + """ {uid:row.Name})
+            MERGE (target:"""+ targetType + """ {uid:row."""+targetKey+"""})
+            CREATE (target)-[r:"""+ relationshipName+"""]->(source)
+                    SET r.Number_of_related_issues = 0         
+        """
+    run_neo_query(relation_data,query)
+    
+def generate_node_match_query(namelist):
+    query = ""
+    for name in namelist:
+        query = query + "MATCH("+name.replace(" ","_")+"{uid:'"+name+"'}) "
+
+    query = query + "RETURN "
+    
+    for name in namelist:
+        query = query + name.replace(" ","_")+","
+
+    return query[:-1]
 
 def process_language_data(data):
     language_data = data[['Name','Developer','Year_of_latest_release', 'Variability_Modelling', 'Simulation_Links', 'Customisation']]
@@ -36,7 +80,6 @@ def process_language_data(data):
     # Neo4j UNWIND query expects a list of dictionaries
     # for bulk insertion
     language_data = list(language_data.T.to_dict().values())
-    print(language_data)
 
     query = """
             UNWIND $rows AS row
@@ -53,52 +96,10 @@ def process_language_data(data):
     run_neo_query(language_data,query)
 
     # adding relationships to available tools
-    tool_data = data[['Name','Tool']]
-    tool_data =  tool_data.dropna()
-
-    s = tool_data['Tool'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "Tool"
-    del tool_data["Tool"]
-    s = s.to_frame().reset_index()
-    tool_data = pd.merge(tool_data, s, right_on='level_0', left_index = True)
-
-    del tool_data["level_0"]
-    del tool_data["level_1"]
-    tool_data = list(tool_data.T.to_dict().values())
-
-    query = """
-           UNWIND $rows AS row
-           MERGE (language:Language {uid:row.Name})
-           MERGE (tool:Tool {uid:row.Tool})
-           CREATE (language)-[r:AVAILABLE_IN]->(tool)
-           
-       """
-
-    run_neo_query(tool_data,query)
-
+    process_relationships(data,'Language','Tool','Tool','AVAILABLE_IN','OUTGOING')
+    
     # adding relationships to available methods
-    method_data = data[['Name','Method']]
-    method_data =  method_data.dropna()
-
-    s = method_data['Method'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "Method"
-    del method_data["Method"]
-    s = s.to_frame().reset_index()
-    method_data = pd.merge(method_data, s, right_on='level_0', left_index = True)
-
-    del method_data["level_0"]
-    del method_data["level_1"]
-    method_data = list(method_data.T.to_dict().values())
-
-    query = """
-           UNWIND $rows AS row
-           MERGE (language:Language {uid:row.Name})
-           MERGE (method:Method {uid:row.Method})
-           CREATE (language)-[r:CAN_FOLLOW]->(method)
-           
-       """
-
-    run_neo_query(method_data,query)
+    process_relationships(data,'Language','Method','Method','CAN_FOLLOW','OUTGOING')
 
 def process_tool_data(data):
     tool_data = data[['Name','Developer','Year_of_latest_release', 'Simulation', 'Customisation']]
@@ -108,7 +109,6 @@ def process_tool_data(data):
     # Neo4j UNWIND query expects a list of dictionaries
     # for bulk insertion
     tool_data = list(tool_data.T.to_dict().values())
-    print(tool_data)
 
     query = """
             UNWIND $rows AS row
@@ -124,52 +124,15 @@ def process_tool_data(data):
     run_neo_query(tool_data,query)
 
     # adding relationships to available languages
-    language_data = data[['Name','Language']]
-    language_data =  language_data.dropna()
-
-    s = language_data['Language'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "Language"
-    del language_data["Language"]
-    s = s.to_frame().reset_index()
-    language_data = pd.merge(language_data, s, right_on='level_0', left_index = True)
-
-    del language_data["level_0"]
-    del language_data["level_1"]
-    language_data = list(language_data.T.to_dict().values())
-
-    query = """
-           UNWIND $rows AS row
-           MERGE (tool:Tool {uid:row.Name})
-           MERGE (language:Language {uid:row.Language})
-           CREATE (tool)-[r:CAN_USE]->(language)
-           
-       """
-
-    run_neo_query(language_data,query)
+    process_relationships(data,'Tool','Language','Language','CAN_USE','OUTGOING')
 
     # adding relationships to available methods
-    method_data = data[['Name','Method']]
-    method_data =  method_data.dropna()
+    process_relationships(data,'Tool','Method','Method','CAN_IMPLEMENT','OUTGOING')
 
-    s = method_data['Method'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "Method"
-    del method_data["Method"]
-    s = s.to_frame().reset_index()
-    method_data = pd.merge(method_data, s, right_on='level_0', left_index = True)
+    #adding relationships to available simulation tools
+    process_relationships(data,'Tool','Simulation_Tool','Simulation_Tool','CAN_EXECUTE_MODEL_IN','OUTGOING')
 
-    del method_data["level_0"]
-    del method_data["level_1"]
-    method_data = list(method_data.T.to_dict().values())
-
-    query = """
-           UNWIND $rows AS row
-           MERGE (tool:Tool {uid:row.Name})
-           MERGE (method:Method {uid:row.Method})
-           CREATE (tool)-[r:CAN_IMPLEMENT]->(method)
-       """
-
-    run_neo_query(method_data,query)
-
+    
 def process_method_data(data):
     method_data = data[['Name','Developer','Year_of_latest_release', 'Design_Space_Exploration']]
     method_data =  method_data.dropna()
@@ -178,7 +141,6 @@ def process_method_data(data):
     # Neo4j UNWIND query expects a list of dictionaries
     # for bulk insertion
     method_data = list(method_data.T.to_dict().values())
-    print(method_data)
 
     query = """
             UNWIND $rows AS row
@@ -193,76 +155,13 @@ def process_method_data(data):
     run_neo_query(method_data,query)
 
     # adding relationships to available languages
-    language_data = data[['Name','Language']]
-    language_data =  language_data.dropna()
-
-    s = language_data['Language'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "Language"
-    del language_data["Language"]
-    s = s.to_frame().reset_index()
-    language_data = pd.merge(language_data, s, right_on='level_0', left_index = True)
-
-    del language_data["level_0"]
-    del language_data["level_1"]
-    language_data = list(language_data.T.to_dict().values())
-
-    query = """
-           UNWIND $rows AS row
-           MERGE (method:Method {uid:row.Name})
-           MERGE (language:Language {uid:row.Language})
-           CREATE (method)-[r:CAN_BE_WRITTEN_IN]->(language)
-           
-       """
-
-    run_neo_query(language_data,query)
+    process_relationships(data,'Method','Language','Language','CAN_BE_WRITTEN_IN','OUTGOING')
 
     # adding relationships to available tools
-    tool_data = data[['Name','Tool']]
-    tool_data =  tool_data.dropna()
-
-    s = tool_data['Tool'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "Tool"
-    del tool_data["Tool"]
-    s = s.to_frame().reset_index()
-    tool_data = pd.merge(tool_data, s, right_on='level_0', left_index = True)
-
-    del tool_data["level_0"]
-    del tool_data["level_1"]
-    tool_data = list(tool_data.T.to_dict().values())
-
-    query = """
-           UNWIND $rows AS row
-           MERGE (method:Method {uid:row.Name})
-           MERGE (tool:Tool {uid:row.Tool})
-           CREATE (method)-[r:AVAILABLE_IN]->(tool)
-           
-       """
-
-    run_neo_query(tool_data,query)
+    process_relationships(data,'Method','Tool','Tool','AVAILABLE_IN','OUTGOING')
 
     # adding relationships to generated artifacts
-    artifacts_data = data[['Name','Artifacts']]
-    artifacts_data =  artifacts_data.dropna()
-
-    s = artifacts_data['Artifacts'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "Artifacts"
-    del artifacts_data["Artifacts"]
-    s = s.to_frame().reset_index()
-    artifacts_data = pd.merge(artifacts_data, s, right_on='level_0', left_index = True)
-
-    del artifacts_data["level_0"]
-    del artifacts_data["level_1"]
-    artifacts_data = list(artifacts_data.T.to_dict().values())
-
-    query = """
-           UNWIND $rows AS row
-           MERGE (method:Method {uid:row.Name})
-           MERGE (artifact:Artifact {uid:row.Artifacts})
-           CREATE (method)-[r:GENERATES]->(artifact)
-           
-       """
-
-    run_neo_query(artifacts_data,query)
+    process_relationships(data,'Method','Artifacts','Artifact','GENERATES','OUTGOING')
 
 def process_issue_data(data):
     issue_data = data[['Name','Summary','Affected_Aspects', 'Severity', 'Workaround']]
@@ -272,7 +171,6 @@ def process_issue_data(data):
     # Neo4j UNWIND query expects a list of dictionaries
     # for bulk insertion
     issue_data = list(issue_data.T.to_dict().values())
-    print(issue_data)
 
     query = """
             UNWIND $rows AS row
@@ -304,7 +202,7 @@ def process_issue_data(data):
            UNWIND $rows AS row
            MERGE (issue:Issue {uid:row.Name})
            MERGE (aspect {uid:row.Affected_Aspects})
-           CREATE (issue)-[r:AVAILABLE_IN]->(aspect)
+           CREATE (issue)-[r:AFFECTS]->(aspect)
            
        """
 
@@ -318,7 +216,6 @@ def process_technique_data(data):
     # Neo4j UNWIND query expects a list of dictionaries
     # for bulk insertion
     technique_data = list(technique_data.T.to_dict().values())
-    print(technique_data)
 
     query = """
             UNWIND $rows AS row
@@ -334,91 +231,194 @@ def process_technique_data(data):
     run_neo_query(technique_data,query)
 
     #adding relationships to inputs
-    input_data = data[['Name','Inputs']]
-    input_data = input_data.dropna()
-
-    s = input_data['Inputs'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "Inputs"
-    del input_data["Inputs"]
-    s = s.to_frame().reset_index()
-    input_data = pd.merge(input_data, s, right_on='level_0', left_index = True)
-
-    del input_data["level_0"]
-    del input_data["level_1"]
-    input_data = list(input_data.T.to_dict().values())
-
-    query = """
-           UNWIND $rows AS row
-           MERGE (technique:Technique {uid:row.Name})
-           MERGE (artifact:Artifact {uid:row.Inputs})
-           CREATE (technique)-[r:TAKES_INPUT]->(artifact)
-           
-       """
-
-    run_neo_query(input_data,query)
-
+    process_relationships(data,'Technique','Inputs','Artifact','TAKES_AS_INPUT','INCOMING')
+    
     #adding relationships to outputs
-    output_data = data[['Name','Outputs']]
-    output_data = output_data.dropna()
-
-    s = output_data['Outputs'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "Outputs"
-    del output_data["Outputs"]
-    s = s.to_frame().reset_index()
-    output_data = pd.merge(output_data, s, right_on='level_0', left_index = True)
-
-    del output_data["level_0"]
-    del output_data["level_1"]
-    output_data = list(output_data.T.to_dict().values())
-
-    query = """
-           UNWIND $rows AS row
-           MERGE (technique:Technique {uid:row.Name})
-           MERGE (artifact:Artifact {uid:row.Outputs})
-           CREATE (technique)-[r:CREATS_OUTPUT]->(artifact)
-           
-       """
-
-    run_neo_query(output_data,query)
+    process_relationships(data,'Technique','Outputs','Artifact','CREATES_OUTPUT','OUTGOING')
 
     #adding relationships to solved issues
-    solves_data = data[['Name','Solves']]
-    solves_data = solves_data.dropna()
+    process_relationships(data,"Technique","Solves","Issue","SOLVES",'OUTGOING')
 
-    s = solves_data['Solves'].str.split(';').apply(pd.Series, 1).stack()
-    s.name = "Solves"
-    del solves_data["Solves"]
-    s = s.to_frame().reset_index()
-    solves_data = pd.merge(solves_data, s, right_on='level_0', left_index = True)
+def process_simtool_data(data):
+    simtool_data = data[['Name','Developer','Year_of_latest_release','Language', 'Customisation']]
+    simtool_data =  simtool_data.dropna()
 
-    del solves_data["level_0"]
-    del solves_data["level_1"]
-    solves_data = list(solves_data.T.to_dict().values())
+    # Convert data frame to list of dictionaries
+    # Neo4j UNWIND query expects a list of dictionaries
+    # for bulk insertion
+    simtool_data = list(simtool_data.T.to_dict().values())
+    print(simtool_data)
 
     query = """
-           UNWIND $rows AS row
-           MERGE (technique:Technique {uid:row.Name})
-           MERGE (issue:Issue {uid:row.Solves})
-           CREATE (technique)-[r:SOLVES]->(issue)
-           
-       """
+            UNWIND $rows AS row
 
-    run_neo_query(solves_data,query)
+            MERGE (simtool:Simulation_Tool {uid:row.Name})
+            SET 
+                simtool.Developer = row.Developer,
+                simtool.Language = row.Language,
+                simtool.Customisation = row.Customisation
+        """
 
+    run_neo_query(simtool_data,query)
+
+    # adding available outputs
+    process_relationships(data,"Simulation_Tool","Outputs","Artifact","EXECUTES",'OUTGOING')
+
+    # adding links to related methods, for later shortest path estimation need to force the path through a method
+    
+
+def update_issue_cost(languagedata,tooldata,methoddata):
+     # counting issues related to languages
+    language_data = languagedata[['Name']]
+    language_data =  language_data.dropna()
+
+    language_data = list(language_data.T.to_dict().values())
+    for language in language_data:
+        query = """
+                MATCH 
+                    (n:Language)<-[r:AFFECTS]-() WHERE n.uid = '"""+language['Name']+"""'
+                WITH n,COUNT(r) as numberofissues
+                SET n.Number_of_related_issues = numberofissues
+                RETURN numberofissues
+            """
+
+        numberofissues = graph.run(query).evaluate()
+        Noissues = numberofissues
+        if Noissues is None:
+            Noissues = 0
+
+        query = """
+                MATCH 
+                    (n:Language)<-[r2]-() WHERE n.uid = '"""+language['Name']+"""'
+                WITH n,r2
+                SET r2.Number_of_related_issues = """+str(Noissues)+"""
+            """
+
+        graph.run(query)
+          
+    # counting issues related to tools
+    tool_data = tooldata[['Name']]
+    tool_data =  tool_data.dropna()
+
+    tool_data = list(tool_data.T.to_dict().values())
+    for tool in tool_data:
+        query = """
+                MATCH 
+                    (n:Tool)<-[r:AFFECTS]-() WHERE n.uid = '"""+tool['Name']+"""'
+                WITH n,COUNT(r) as numberofissues
+                SET n.Number_of_related_issues = numberofissues
+                RETURN numberofissues
+            """
+
+        numberofissues = graph.run(query).evaluate()
+        Noissues = numberofissues
+        if Noissues is None:
+            Noissues = 0
+            
+        query = """
+                MATCH 
+                    (n:Tool)<-[r2]-() WHERE n.uid = '"""+tool['Name']+"""'
+                WITH n,r2
+                SET r2.Number_of_related_issues = """+str(Noissues)+"""
+            """
+
+        graph.run(query)
+
+    # counting issues related to methods
+    method_data = methoddata[['Name']]
+    method_data =  method_data.dropna()
+
+    method_data = list(method_data.T.to_dict().values())
+    for method in method_data:
+        query = """
+                MATCH 
+                    (n:Method)<-[r:AFFECTS]-() WHERE n.uid = '"""+method['Name']+"""'
+                WITH n,COUNT(r) as numberofissues
+                SET n.Number_of_related_issues = numberofissues
+                RETURN numberofissues
+            """
+
+        numberofissues = graph.run(query).evaluate()
+        Noissues = numberofissues
+        if Noissues is None:
+            Noissues = 0
+            
+        query = """
+                MATCH 
+                    (n:Method)<-[r2]-() WHERE n.uid = '"""+method['Name']+"""'
+                WITH n,r2
+                SET r2.Number_of_related_issues = """+str(Noissues)+"""
+            """
+
+        graph.run(query)
+
+
+def identify_exploration_solution():
+    # Query creates graph projection (like a sub set of the main graph with relevant data), then runs the A* shortest path algorithm and collects results
+
+    matchstring="""
+    MATCH(n:Method)
+    MATCH(m:Tool)
+    MATCH(o:Language)
+    MATCH(p:Artifact)
+    MATCH(q:Technique)
+    RETURN n,m,o,p,q
+    """
+
+    #CALL gds.graph.drop('solutionGraph') 
+    #YIELD graphName
+    query = """
+            CALL gds.graph.drop('solutionGraph') 
+            YIELD graphName
+            CALL gds.graph.project(
+                'solutionGraph',
+                ['Method', 'Tool','Simulation_Tool','Language','Artifact','Technique'],
+                ['AVAILABLE_IN','CAN_IMPLEMENT','CAN_EXECUTE_MODEL_IN','EXECUTES','GENERATES','TAKES_AS_INPUT','CREATES_OUTPUT'],
+                {relationshipProperties: 'Number_of_related_issues'}
+            )
+            YIELD
+                graphName AS graph, nodeProjection, nodeCount AS nodes, relationshipProjection, relationshipCount AS rels
+            MATCH (source{uid:"UML"}), (target{uid:"Globally Optimal Deisgn Parameters"})
+            CALL gds.shortestPath.dijkstra.stream('solutionGraph', {
+                sourceNode: source,
+                targetNode: target,
+                relationshipWeightProperty: 'Number_of_related_issues'
+            })
+            YIELD index, sourceNode, targetNode, totalCost, nodeIds, costs, path
+            RETURN
+                index,
+                gds.util.asNode(sourceNode).name AS sourceNodeName,
+                gds.util.asNode(targetNode).name AS targetNodeName,
+                totalCost,
+                [nodeId IN nodeIds | gds.util.asNode(nodeId).uid] AS nodeNames,
+                costs,
+                nodes(path) as path
+            ORDER BY index
+        """
+
+    result = graph.run(query).to_data_frame()
+    return result
+    
 def run_neo_query(data, query):
     batches = get_batches(data)
 
     for index, batch in batches:
-        print('[Batch: %s] Will add %s node to Graph' % (index, len(batch)))
-        print(batch)
+        print('[Batch: %s] Will add %s node(s) to Graph' % (index, len(batch)))
         graph.run(query, rows=batch)
 
 
 def get_batches(lst, batch_size=100):
     return [(i, lst[i:i + batch_size]) for i in range(0, len(lst), batch_size)]
 
+def clear_database():
+    query = """
+        MATCH(n) DETACH DELETE n
+    """
+    graph.run(query)
+
 def main():
     if __name__== "__main__":
+        clear_database()
         language_data = read_data('Languages')
         process_language_data(language_data)
         tool_data = read_data('Tools')
@@ -429,6 +429,15 @@ def main():
         process_issue_data(issue_data)
         technique_data = read_data('Techniques')
         process_technique_data(technique_data)
+        simtool_data = read_data('SimTools')
+        process_simtool_data(simtool_data)
+        update_issue_cost(language_data,tool_data,method_data)
+        candidate_path = identify_exploration_solution()
+        querystring = generate_node_match_query(candidate_path.nodeNames[0])
+        print('shortest path query:\n')
+        print(querystring)
+        print('\n')
+
 
 if __name__ == "__main__":
     main()
