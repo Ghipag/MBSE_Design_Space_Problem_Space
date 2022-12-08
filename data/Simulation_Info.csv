@@ -1,0 +1,10 @@
+Name,Developer,Year_of_latest_release,Language,Interfacing and model generation,Customisation
+Modelica,Modelica,IDK,Modelica,Common (e.g. cameo),Open Source
+Simulink,MathWorks,IDK,Simulink/MATLAB,Common (e.g. cameo),Closed Source
+Collimator,Collimator,IDK,Collimator (strong coupling with Python),Less Common,Closed Source (limited python API)
+Cameo Simulation Toolkit,Cameo,IDK,Sys/ML V1;UML,Directly from SysML,Open API
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,

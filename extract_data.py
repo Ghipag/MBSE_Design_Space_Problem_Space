@@ -70,6 +70,10 @@ def generate_node_match_query(namelist):
     for name in namelist:
         query = query + name.replace(" ","_")+","
 
+    print('shortest path query:\n')
+    print(query[:-1])
+    print('\n')
+
     return query[:-1]
 
 def process_language_data(data):
@@ -234,12 +238,12 @@ def process_technique_data(data):
     process_relationships(data,'Technique','Inputs','Artifact','TAKES_AS_INPUT','INCOMING')
     
     #adding relationships to outputs
-    process_relationships(data,'Technique','Outputs','Artifact','CREATES_OUTPUT','OUTGOING')
+    process_relationships(data,'Technique','Outputs','Artifact','GENERATES','OUTGOING')
 
     #adding relationships to solved issues
     process_relationships(data,"Technique","Solves","Issue","SOLVES",'OUTGOING')
 
-def process_simtool_data(data):
+def process_simtool_data(data,tool_data):
     simtool_data = data[['Name','Developer','Year_of_latest_release','Language', 'Customisation']]
     simtool_data =  simtool_data.dropna()
 
@@ -265,6 +269,12 @@ def process_simtool_data(data):
     process_relationships(data,"Simulation_Tool","Outputs","Artifact","EXECUTES",'OUTGOING')
 
     # adding links to related methods, for later shortest path estimation need to force the path through a method
+    query = """
+            MATCH (tool:Tool)-[r]->(simtool:Simulation_Tool)
+            MATCH (tool:Tool)-[r2]->(method:Method)
+            CREATE (method)-[r32:METHOD_RELATED_SIMTOOL]->(simtool)
+        """
+    run_neo_query(simtool_data,query)
     
 
 def update_issue_cost(languagedata,tooldata,methoddata):
@@ -353,17 +363,8 @@ def update_issue_cost(languagedata,tooldata,methoddata):
         graph.run(query)
 
 
-def identify_exploration_solution():
+def identify_exploration_solution(technique_data,method_data):
     # Query creates graph projection (like a sub set of the main graph with relevant data), then runs the A* shortest path algorithm and collects results
-
-    matchstring="""
-    MATCH(n:Method)
-    MATCH(m:Tool)
-    MATCH(o:Language)
-    MATCH(p:Artifact)
-    MATCH(q:Technique)
-    RETURN n,m,o,p,q
-    """
 
     #CALL gds.graph.drop('solutionGraph') 
     #YIELD graphName
@@ -373,12 +374,12 @@ def identify_exploration_solution():
             CALL gds.graph.project(
                 'solutionGraph',
                 ['Method', 'Tool','Simulation_Tool','Language','Artifact','Technique'],
-                ['AVAILABLE_IN','CAN_IMPLEMENT','CAN_EXECUTE_MODEL_IN','EXECUTES','GENERATES','TAKES_AS_INPUT','CREATES_OUTPUT'],
+                ['AVAILABLE_IN','CAN_IMPLEMENT','METHOD_RELATED_SIMTOOL','EXECUTES','GENERATES','TAKES_AS_INPUT'],
                 {relationshipProperties: 'Number_of_related_issues'}
             )
             YIELD
                 graphName AS graph, nodeProjection, nodeCount AS nodes, relationshipProjection, relationshipCount AS rels
-            MATCH (source{uid:"UML"}), (target{uid:"Globally Optimal Deisgn Parameters"})
+            MATCH (source{uid:"SysML V1"}), (target{uid:"Globally Optimal Design Parameters"})
             CALL gds.shortestPath.dijkstra.stream('solutionGraph', {
                 sourceNode: source,
                 targetNode: target,
@@ -396,8 +397,85 @@ def identify_exploration_solution():
             ORDER BY index
         """
 
-    result = graph.run(query).to_data_frame()
-    return result
+    initial_path = graph.run(query).to_data_frame()
+    # this result will not necessarily privde a total solution as some design technique inputs (artifacts) may be missing and need to be considered
+
+    # identifying chosen method, for use later in checking simulation tool selection
+    for node in initial_path.nodeNames[0]:
+        if node in method_data['Name'].values:
+            chosen_method = node
+
+    # firstly identify selected techniques
+    technique_list = []
+    for node in initial_path.nodeNames[0]:
+        if node in technique_data['Name'].values:
+            technique_list.append(node)
+
+    # now find required artifacts for those techniques
+    for technique in technique_list:
+        query = """
+            MATCH(technique:Technique{uid:'"""+technique+"""'})<-[r:TAKES_AS_INPUT]-(preReq)
+            RETURN preReq
+        """
+        technique_prereqs = graph.run(query).to_data_frame()
+        # now add any artifacts not included in the initial path
+        for preReq in technique_prereqs.preReq:
+            if preReq['uid'] not in initial_path.nodeNames[0]:
+                initial_path.nodeNames[0].append(preReq['uid'])
+
+                # need to check for required techniques to generate these artifacts and add them to the solution path
+                query = """
+                    MATCH(artifact:Artifact{uid:'"""+preReq['uid']+"""'})<-[r:GENERATES|EXECUTES]-(preReq:Technique|Simulation_Tool)
+                    RETURN preReq
+                """
+                artifact_prereqs = graph.run(query).to_data_frame()
+
+                # as Executable System Model is a special case of artifact that is generated specifally by simulation tools,
+                # need to hanld this special case and only select the best simulation tool
+                if preReq['uid'] == 'Executable System Model':
+                    query = """
+                        CALL gds.graph.drop('simtoolGraph') 
+                        YIELD graphName
+                        CALL gds.graph.project(
+                            'simtoolGraph',
+                            ['Method', 'Simulation_Tool','Artifact'],
+                            ['METHOD_RELATED_SIMTOOL','EXECUTES'],
+                            {relationshipProperties: 'Number_of_related_issues'}
+                        )
+                        YIELD
+                            graphName AS graph, nodeProjection, nodeCount AS nodes, relationshipProjection, relationshipCount AS rels
+                        MATCH (source{uid:'"""+chosen_method+"""'}), (target{uid:'Executable System Model'})
+                        CALL gds.shortestPath.dijkstra.stream('simtoolGraph', {
+                            sourceNode: source,
+                            targetNode: target,
+                            relationshipWeightProperty: 'Number_of_related_issues'
+                        })
+                        YIELD index, sourceNode, targetNode, totalCost, nodeIds, costs, path
+                        RETURN
+                            index,
+                            gds.util.asNode(sourceNode).name AS sourceNodeName,
+                            gds.util.asNode(targetNode).name AS targetNodeName,
+                            totalCost,
+                            [nodeId IN nodeIds | gds.util.asNode(nodeId).uid] AS nodeNames,
+                            costs,
+                            nodes(path) as path
+                        ORDER BY index
+                    """
+
+                    usable_simtool = graph.run(query).to_data_frame().nodeNames[0][1]
+                    artifact_prereqs = artifact_prereqs.drop(artifact_prereqs.index.values)
+                    artifact_prereqs = artifact_prereqs.append({'preReq':{'uid':usable_simtool}},ignore_index=True)
+                    print(usable_simtool)
+                    print(artifact_prereqs)
+
+
+                # now add any techniques/simulation tools not included in the initial path
+                if not artifact_prereqs.empty:
+                    for artifact_preReq in artifact_prereqs.preReq:
+                        if artifact_preReq['uid'] not in initial_path.nodeNames[0]:
+                            initial_path.nodeNames[0].append(artifact_preReq['uid'])
+
+    return initial_path
     
 def run_neo_query(data, query):
     batches = get_batches(data)
@@ -430,13 +508,13 @@ def main():
         technique_data = read_data('Techniques')
         process_technique_data(technique_data)
         simtool_data = read_data('SimTools')
-        process_simtool_data(simtool_data)
+        process_simtool_data(simtool_data,tool_data)
         update_issue_cost(language_data,tool_data,method_data)
-        candidate_path = identify_exploration_solution()
-        querystring = generate_node_match_query(candidate_path.nodeNames[0])
-        print('shortest path query:\n')
-        print(querystring)
-        print('\n')
+        candidate_path = identify_exploration_solution(technique_data,method_data)
+        print(f"candidate solution issue count: {candidate_path.totalCost[0]}")
+        generate_node_match_query(candidate_path.nodeNames[0])
+        generate_node_match_query(['SysML V1','Cameo','SEAM','Cameo Simulation Toolkit','Surrogate Modelling','Genetic Optimisation','Globally Optimal Design Parameters'])
+
 
 
 if __name__ == "__main__":

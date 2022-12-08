@@ -6,6 +6,6 @@ Capella Language,Eclipse,IDK,Capella,ARCADIA,None inbuilt,Limited (on third part
 OPM Language,OPM/ISO,IDK,OPMCloud,OPM,Limited/none,"Animation,",Limited
 SDL,Vitech,IDK,GENSYS;TASTE,STRATA,Limited/none,Behaviour simulation in GENSYS,Is extensible
 Valispace Language,Valispace,IDK,Valispace,Valispace Method,Limited/none,Parametric,"Web based, has API"
-RePoSyD Language,RePoSyD,IDK,RePoSyD,RePoSyD,Limited/none,Limited/none,Open source
+RML,RePoSyD,IDK,RePoSyD Tool,RePoSyD,Limited/none,Limited/none,Open source
 AADL,"SAE,2022",IDK,TASTE,TASTE Method,Limited/none,"Can be simulated,e.g. in TASTE for model base verification",can be extended via language annexes
 SLIM,COMPASS,IDK,COMPASS 3.0,COMPASS,Limited/none,"Performability analysis and others, focussed on safety and correctness",limited
