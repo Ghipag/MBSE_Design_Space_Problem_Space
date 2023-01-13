@@ -73,5 +73,11 @@ def main():
         solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,tool_data,simtool_data,graph)
         database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
 
+        # demonstrating upcoming solution
+        solution_minimum_path = ['SysML V1','Cameo','SEAM','Neural Network Assisted Language Modeling for Architecture Generation and Engineering','System architecture']
+        solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,tool_data,simtool_data,graph)
+        database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
+
+
 if __name__ == "__main__":
     main()

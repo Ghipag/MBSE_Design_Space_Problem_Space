@@ -128,7 +128,8 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
                                 graph.run(query)
                             except:
                                 print("graph already exists")
-
+                            
+                            # find sim tool with shortest path through
                             query = """
                                 CALL gds.graph.project(
                                     'simtoolGraph',
@@ -160,12 +161,15 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
                             artifact_prereqs = artifact_prereqs.drop(artifact_prereqs.index.values)
                             artifact_prereqs = artifact_prereqs.append({'preReq':{'uid':usable_simtool}},ignore_index=True)
 
-                    # now add any techniques/simulation tools not included in the initial path
-                    if not artifact_prereqs.empty:
-                        for artifact_preReq in artifact_prereqs.preReq:
-                            if artifact_preReq['uid'] not in initial_path.nodeNames[0]:
-                                initial_path.nodeNames[0].append(artifact_preReq['uid'])
-                                added_new_node = True
+                    # now add any techniques not included in the initial path (but not simtools)
+                    if preReq['uid'] != 'Executable System Model':
+                        
+                        if not artifact_prereqs.empty:
+                            for artifact_preReq in artifact_prereqs.preReq:
+                                if artifact_preReq['uid'] not in initial_path.nodeNames[0]:
+                                    initial_path.nodeNames[0].append(artifact_preReq['uid'])
+                                    added_new_node = True
+
         # update selected technique list and artifact list
         technique_list = []
         for node in initial_path.nodeNames[0]:
