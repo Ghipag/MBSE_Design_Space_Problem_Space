@@ -64,18 +64,19 @@ def main():
         #####################################################################
         # Generating a candidate 'optimal' solution path from defined scenario
         #####################################################################
-        candidate_path = network_analysis.identify_exploration_solution(solution_start,solution_end,MBSE_environment,technique_data,False,tool_data,simtool_data,graph)
+        candidate_path = network_analysis.identify_exploration_solution(solution_start,solution_end,MBSE_environment,technique_data,techniques_list,False,tool_data,simtool_data,graph)
         print(f"candidate solution issue cost: {candidate_path.totalCost[0]}")
         database_tools.generate_node_match_query(candidate_path.nodeNames[0])
 
         # demonstrating last years solution
         solution_minimum_path = ['SysML V1','Cameo','SEAM','Cameo Simulation Toolkit','Surrogate Modelling','Genetic Optimisation','Globally Optimal Design Parameters']
-        solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,tool_data,simtool_data,graph)
+        solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
         database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
 
         # demonstrating upcoming solution
-        solution_minimum_path = ['SysML V1','Cameo','SEAM','Neural Network Assisted Language Modeling for Architecture Generation and Engineering','System architecture']
-        solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,tool_data,simtool_data,graph)
+        solution_minimum_path = ['Capella Language','Capella','ARCADIA','Neural Network Assisted Language Modeling for Architecture Generation and Engineering']
+        solution_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
+        solution_full_path = network_analysis.identify_technique_outputs('Neural Network Assisted Language Modeling for Architecture Generation and Engineering',solution_path,graph)
         database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
 
 
