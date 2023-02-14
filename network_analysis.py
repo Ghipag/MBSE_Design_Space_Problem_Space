@@ -48,7 +48,6 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
                 nodes(path) as path
             ORDER BY index
         """
-
     initial_path = graph.run(query).to_data_frame()
     print(initial_path)
     # add scenario context nodes (except last one)

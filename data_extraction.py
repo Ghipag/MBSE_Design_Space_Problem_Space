@@ -210,7 +210,31 @@ def process_simtool_data(data,simtool_data,graph):
                 SET r.Number_of_related_issues = 0    
                 SET r.Issue_Cost = 0 
         """
-    #database_tools.run_neo_query(simtool_data,query) NOT NESSECARY ANY MORE
+    database_tools.run_neo_query(simtool_data,query,graph) # POSSIBLY NOT NESSECARY ANY MORE
+
+def process_actor_data(data,graph):
+    tool_data = data[['Name','Generated_Artifacts','Used_Aspects', 'Desired_Artifacts']]
+    tool_data =  tool_data.dropna()
+
+    # Convert data frame to list of dictionaries
+    # Neo4j UNWIND query expects a list of dictionaries
+    # for bulk insertion
+    tool_data = list(tool_data.T.to_dict().values())
+
+    query = """
+            UNWIND $rows AS row
+
+            MERGE (actor:Actor {uid:row.Name})
+            SET 
+                actor.Generated_Artifacts = row.Generated_Artifacts,
+                actor.Used_Aspects = row.Used_Aspects,
+                actor.Desired_Artifacts = row.Desired_Artifacts
+        """
+
+    database_tools.run_neo_query(tool_data,query,graph)
+
+    # adding relationships to available languages
+    database_tools.process_relationships(data,'Actor','Generated_Artifacts','Artifact','ACTOR_GENERATES','OUTGOING',graph)
     
 def apply_issue_cost(languagedata,tooldata,methoddata,graph):
      # counting issues related to languages

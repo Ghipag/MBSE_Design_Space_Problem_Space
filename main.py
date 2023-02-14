@@ -38,6 +38,8 @@ def main():
         data_extraction.process_issue_data(issue_data,graph)
         technique_data = data_extraction.read_data('Techniques')
         data_extraction.process_technique_data(technique_data,graph)
+        actor_data = data_extraction.read_data('Actors')
+        data_extraction.process_actor_data(actor_data,graph)
         
         #####################################################################
         # Defintion of Scenario
