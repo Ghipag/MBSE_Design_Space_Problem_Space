@@ -81,6 +81,8 @@ def main():
         solution_full_path = network_analysis.identify_technique_outputs('Neural Network Assisted Language Modeling for Architecture Generation and Engineering',solution_path,graph)
         database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
 
+        #https://neo4j.com/labs/neosemantics/4.0/inference/
+
 
 if __name__ == "__main__":
     main()
