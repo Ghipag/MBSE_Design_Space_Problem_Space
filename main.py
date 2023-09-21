@@ -26,6 +26,7 @@ def main():
         #####################################################################
         
         database_tools.clear_database(graph)
+        data_extraction.process_Ontology_data(graph)
         language_data = data_extraction.read_data('Languages')
         data_extraction.process_language_data(language_data,graph)
         tool_data = data_extraction.read_data('Tools')
@@ -82,7 +83,16 @@ def main():
         database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
 
         #https://neo4j.com/labs/neosemantics/4.0/inference/
-
+        # inference queries:
+        """
+        CALL n10s.inference.nodesLabelled('MBSE_Environment_Element',  {
+        catNameProp: "dbLabel",
+        catLabel: "Type",
+        subCatRel: "NARROWER_THAN"
+        })
+        YIELD node
+        RETURN node.uid as uid, node.Variability_Type as Variability_Type, labels(node) as categories;
+        """
 
 if __name__ == "__main__":
     main()

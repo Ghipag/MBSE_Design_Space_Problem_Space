@@ -9,6 +9,21 @@ def read_data(name):
     print("Column name of data : ", data.columns)
     return data
 
+def process_Ontology_data(graph):
+    
+    # add language ontology category nodes
+    query = """
+        CREATE (c:Type { authoritativeLabel: "MBSE_Environment_Element", dbLabel: "MBSE_Environment_Element", uid: "MBSE_Environment_Element" })
+        CREATE (c:Type { authoritativeLabel: "Issue", dbLabel: "Issue", uid: "Issue" })
+        CREATE (c:Type { authoritativeLabel: "Technique", dbLabel: "Technique", uid: "Technique" })
+        CREATE (c)<-[:NARROWER_THAN]-(:Type { authoritativeLabel: "Language", dbLabel: "Language", identifier: "Language" })
+        CREATE (c)<-[:NARROWER_THAN]-(:Type { authoritativeLabel: "Tool", dbLabel: "Tool", identifier: "Tool" })
+        CREATE (c)<-[:NARROWER_THAN]-(:Type { authoritativeLabel: "Method", dbLabel: "Method", identifier: "Method" })
+        """
+
+    database_tools.run_neo_query(['nil'],query,graph)
+    
+
 def process_language_data(data,graph):
     language_data = data[['Name','Developer','Year_of_latest_release', 'Variability_Modelling', 'Simulation_Links', 'Customisation']]
     language_data =  language_data.dropna()
