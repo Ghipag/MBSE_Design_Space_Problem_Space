@@ -60,7 +60,7 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
     return solution_path
     
 def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_data,techniques_list,tool_data,simtool_data,graph):
-    # firslty checking if input node list is a data frame or simpe list of node names
+    # firslty checking if input node list is a data frame or simple list of node names
     # if simple list, adding it to a dataframe with node names collum for ease of use
     if isinstance(initial_path,list):
         initial_path_dict = {'nodeNames':[initial_path]}
@@ -208,7 +208,7 @@ def set_solution_start(Scenario_context,graph):
             'artifacts':5,
             'technique':6}
 
-    # now find lastest step included in Scenario_context
+    # now find latest step included in Scenario_context
     final_step = 0
     for key in Scenario_context:
         if steps[key]>final_step:

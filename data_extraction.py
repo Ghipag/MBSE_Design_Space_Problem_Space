@@ -11,17 +11,27 @@ def read_data(name):
 
 def process_Ontology_data(graph):
     
-    # add language ontology category nodes
+    # add ontology node types (as nodes)
     query = """
-        CREATE (c:Type { authoritativeLabel: "MBSE_Environment_Element", dbLabel: "MBSE_Environment_Element", uid: "MBSE_Environment_Element" })
-        CREATE (c:Type { authoritativeLabel: "Issue", dbLabel: "Issue", uid: "Issue" })
-        CREATE (c:Type { authoritativeLabel: "Technique", dbLabel: "Technique", uid: "Technique" })
-        CREATE (c)<-[:NARROWER_THAN]-(:Type { authoritativeLabel: "Language", dbLabel: "Language", identifier: "Language" })
-        CREATE (c)<-[:NARROWER_THAN]-(:Type { authoritativeLabel: "Tool", dbLabel: "Tool", identifier: "Tool" })
-        CREATE (c)<-[:NARROWER_THAN]-(:Type { authoritativeLabel: "Method", dbLabel: "Method", identifier: "Method" })
+        CREATE (e:Type { authoritativeLabel: "MBSE_Environment_Element", dbLabel: "MBSE_Environment_Element", uid: "MBSE_Environment_Element" })
+        CREATE (i:Type { authoritativeLabel: "Issue", dbLabel: "Issue", uid: "Issue" })
+        CREATE (t:Type { authoritativeLabel: "Technique", dbLabel: "Technique", uid: "Technique" })
+        CREATE (e)<-[:NARROWER_THAN]-(:Type { authoritativeLabel: "Language", dbLabel: "Language", identifier: "Language" })
+        CREATE (e)<-[:NARROWER_THAN]-(:Type { authoritativeLabel: "Tool", dbLabel: "Tool", identifier: "Tool" })
+        CREATE (e)<-[:NARROWER_THAN]-(:Type { authoritativeLabel: "Method", dbLabel: "Method", identifier: "Method" })
         """
 
     database_tools.run_neo_query(['nil'],query,graph)
+
+    # add ontology relationship types (as nodes)
+    query = """
+        CREATE (r:Relationship { authoritativeLabel: "SOLVED_BY", dbLabel: "SOLVED_BY", uid: "RELATED_TECHNIQUE" })
+        CREATE (r)<-[:SPO]-(:Type { authoritativeLabel: "Language", dbLabel: "Language", identifier: "Language" })
+        CREATE (r)<-[:SPO]-(:Type { authoritativeLabel: "Tool", dbLabel: "Tool", identifier: "Tool" })
+        CREATE (r)<-[:SPO]-(:Type { authoritativeLabel: "Method", dbLabel: "Method", identifier: "Method" })
+        """
+
+    #database_tools.run_neo_query(['nil'],query,graph)
     
 
 def process_language_data(data,graph):

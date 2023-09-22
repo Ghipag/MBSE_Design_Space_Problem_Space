@@ -91,7 +91,20 @@ def main():
         subCatRel: "NARROWER_THAN"
         })
         YIELD node
-        RETURN node.uid as uid, node.Variability_Type as Variability_Type, labels(node) as categories;
+        RETURN node.uid as uid, labels(node) as categories;
+        """
+
+        """
+        MATCH (technique:Technique)<-[:TAKES_AS_INPUT]-(artifact:Artifact)<-[:GENERATES]-(method:Method {uid:'SEAM'})
+        RETURN technique
+        """
+        """
+        MATCH (technique:Technique)<-[:TAKES_AS_INPUT]-(artifact:Artifact)<-[:GENERATES]-(method:Method)<-[:CAN_IMPLEMENT]-(tool:Tool{uid:'Cameo'})
+        RETURN technique
+        """
+        """
+        MATCH (technique:Technique)<-[:TAKES_AS_INPUT]-(artifact:Artifact)<-[:GENERATES]-(method:Method)<-[:CAN_IMPLEMENT]-(tool:Tool)<-[:AVAILABLE_IN]-(language:Language)
+        RETURN technique
         """
 
 if __name__ == "__main__":
