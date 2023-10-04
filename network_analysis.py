@@ -1,6 +1,26 @@
 import pandas as pd
 
 def identify_exploration_solution(startnode,endnode,scenario_data,technique_data,techniques_list,suggest_techniques,tool_data,simtool_data,graph):
+    """
+    Identify a solution path in the exploration graph between a start node and an end node based on scenario and context data.
+
+    This function identifies a solution path in an exploration graph from a specified start node to an end node, taking into account scenario and context data.
+    It allows the option to suggest additional techniques for the solution.
+
+    Args:
+        startnode (str): The UID of the start node in the graph.
+        endnode (str): The UID of the end node in the graph.
+        scenario_data (dict): A dictionary containing scenario-specific data.
+        technique_data (pandas.DataFrame): A DataFrame containing data about available techniques.
+        techniques_list (list): A list of technique names.
+        suggest_techniques (bool): If True, the function can suggest additional techniques for the solution.
+        tool_data (pandas.DataFrame): A DataFrame containing data about available tools.
+        simtool_data (pandas.DataFrame): A DataFrame containing data about simulation tools.
+        graph: The Neo4j graph database object.
+
+    Returns:
+        pandas.DataFrame: A DataFrame representing the solution path with relevant nodes and their properties.
+    """
     # convert context data dict to list
     scenario_data_list = []
     for key in scenario_data:
@@ -60,6 +80,24 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
     return solution_path
     
 def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_data,techniques_list,tool_data,simtool_data,graph):
+    """
+    Identify a solution path by considering technique and artifact prerequisites.
+
+    This function extends an initial solution path by identifying and adding the prerequisite nodes (techniques and artifacts)
+    required to complete the solution path. It considers technique prerequisites and their respective artifacts.
+
+    Args:
+        initial_path (pandas.DataFrame): A DataFrame representing the initial solution path with relevant nodes.
+        suggest_techniques (bool): If True, additional techniques can be suggested for the solution.
+        technique_data (pandas.DataFrame): A DataFrame containing data about available techniques.
+        techniques_list (list): A list of technique names.
+        tool_data (pandas.DataFrame): A DataFrame containing data about available tools.
+        simtool_data (pandas.DataFrame): A DataFrame containing data about simulation tools.
+        graph: The Neo4j graph database object.
+
+    Returns:
+        pandas.DataFrame: A DataFrame representing the extended solution path with prerequisite nodes and their properties.
+    """
     # firslty checking if input node list is a data frame or simple list of node names
     # if simple list, adding it to a dataframe with node names collum for ease of use
     if isinstance(initial_path,list):
@@ -188,6 +226,19 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
     return initial_path
 
 def select_techniques(techniques_list,graph):
+    """
+    Select a list of techniques and mark them as 'Selected_Technique' in the graph.
+
+    This function takes a list of technique names and marks each technique as 'Selected_Technique' in the Neo4j graph
+    database. It also updates the 'Evaluated_Severity' property of any issues solved by the selected techniques to 0.
+
+    Args:
+        techniques_list (list): A list of technique names to be selected.
+        graph: The Neo4j graph database object.
+
+    Returns:
+        None
+    """
     for technique in techniques_list:
         query="""
             MATCH(technique:Technique{uid:'"""+technique+"""'})-[r:SOLVES]->(issue)
@@ -199,6 +250,21 @@ def select_techniques(techniques_list,graph):
         graph.run(query)
 
 def set_solution_start(Scenario_context,graph):
+    """
+    Determine the starting point for identifying a solution based on the provided Scenario_context.
+
+    This function takes a dictionary representing the Scenario_context, which includes information about
+    the current state of the system modeling process, and determines the starting point for identifying a solution
+    within that context. The starting point is determined based on the completion status of various steps in the
+    conceptual MBSE process model.
+
+    Args:
+        Scenario_context (dict): A dictionary representing the Scenario_context, e.g., {'language': 'Python', 'tool': 'SimTool', ...}.
+        graph: The Neo4j graph database object.
+
+    Returns:
+        str: The name of the starting point based on the provided Scenario_context.
+    """
     
     # dict defining order of steps in conceptual MBSE process model
     steps = {'language':1,
@@ -218,6 +284,20 @@ def set_solution_start(Scenario_context,graph):
     return final_key
 
 def identify_technique_outputs(technique,solution_path,graph):
+    """
+    Identify and add the outputs generated by a specified technique to the solution path.
+
+    This function queries the graph database to identify the outputs generated by a given technique.
+    It then adds these output artifacts to the existing solution path.
+
+    Args:
+        technique (str): The name of the technique for which outputs are to be identified.
+        solution_path (pd.DataFrame): A DataFrame representing the current solution path containing node names.
+        graph: The Neo4j graph database object.
+
+    Returns:
+        pd.DataFrame: The updated solution path DataFrame with technique outputs included.
+    """
     query = """
         MATCH(technique:Technique{uid:'"""+technique+"""'})-[r:GENERATES]->(output)
         RETURN output

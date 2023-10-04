@@ -2,6 +2,15 @@ import pandas as pd
 import database_tools
 
 def read_data(name):
+    """
+    Read data from a CSV file with the given name.
+
+    Args:
+        name (str): The name of the CSV file (excluding the file extension).
+
+    Returns:
+        pd.DataFrame: A Pandas DataFrame containing the data read from the CSV file.
+    """
     data = pd.read_csv(
 
         f"./data/{name}_info.csv",
@@ -10,6 +19,15 @@ def read_data(name):
     return data
 
 def process_Ontology_data(graph):
+    """
+    Process ontology data and create ontology node types as nodes in the graph.
+
+    Args:
+        graph: The Neo4j graph database connection.
+
+    Returns:
+        None
+    """
     
     # add ontology node types (as nodes)
     query = """
@@ -23,18 +41,17 @@ def process_Ontology_data(graph):
 
     database_tools.run_neo_query(['nil'],query,graph)
 
-    # add ontology relationship types (as nodes)
-    query = """
-        CREATE (r:Relationship { authoritativeLabel: "SOLVED_BY", dbLabel: "SOLVED_BY", uid: "RELATED_TECHNIQUE" })
-        CREATE (r)<-[:SPO]-(:Type { authoritativeLabel: "Language", dbLabel: "Language", identifier: "Language" })
-        CREATE (r)<-[:SPO]-(:Type { authoritativeLabel: "Tool", dbLabel: "Tool", identifier: "Tool" })
-        CREATE (r)<-[:SPO]-(:Type { authoritativeLabel: "Method", dbLabel: "Method", identifier: "Method" })
-        """
-
-    #database_tools.run_neo_query(['nil'],query,graph)
-    
-
 def process_language_data(data,graph):
+    """
+    Process language data and create language nodes in the graph.
+
+    Args:
+        data (pandas.DataFrame): A DataFrame containing language data.
+        graph: The Neo4j graph database connection.
+
+    Returns:
+        None
+    """
     language_data = data[['Name','Developer','Year_of_latest_release', 'Variability_Modelling', 'Simulation_Links', 'Customisation']]
     language_data =  language_data.dropna()
 
@@ -64,6 +81,16 @@ def process_language_data(data,graph):
     database_tools.process_relationships(data,'Language','Method','Method','CAN_FOLLOW','OUTGOING',graph)
 
 def process_tool_data(data,graph):
+    """
+    Process language data and create language nodes in the graph.
+
+    Args:
+        data (pandas.DataFrame): A DataFrame containing language data.
+        graph: The Neo4j graph database connection.
+
+    Returns:
+        None
+    """
     tool_data = data[['Name','Developer','Year_of_latest_release', 'Simulation', 'Customisation']]
     tool_data =  tool_data.dropna()
 
@@ -96,6 +123,16 @@ def process_tool_data(data,graph):
 
     
 def process_method_data(data,graph):
+    """
+    Process method data and create method nodes in the graph.
+
+    Args:
+        data (pandas.DataFrame): A DataFrame containing method data.
+        graph: The Neo4j graph database connection.
+
+    Returns:
+        None
+    """
     method_data = data[['Name','Developer','Year_of_latest_release', 'Design_Space_Exploration']]
     method_data =  method_data.dropna()
 
@@ -126,6 +163,16 @@ def process_method_data(data,graph):
     database_tools.process_relationships(data,'Method','Artifacts','Artifact','GENERATES','OUTGOING',graph)
 
 def process_issue_data(data,graph):
+    """
+    Process issue data and create issue nodes in the graph.
+
+    Args:
+        data (pandas.DataFrame): A DataFrame containing issue data.
+        graph: The Neo4j graph database connection.
+
+    Returns:
+        None
+    """
     issue_data = data[['Name','Summary','Affected_Aspects', 'Severity', 'Workaround']]
     issue_data =  issue_data.dropna()
 
@@ -172,6 +219,16 @@ def process_issue_data(data,graph):
     database_tools.run_neo_query(aspect_data,query,graph)
 
 def process_technique_data(data,graph):
+    """
+    Process technique data and create technique nodes in the graph.
+
+    Args:
+        data (pandas.DataFrame): A DataFrame containing technique data.
+        graph: The Neo4j graph database connection.
+
+    Returns:
+        None
+    """
     technique_data = data[['Name','Summary','Variability_Type', 'Adv', 'Disadv']]
     technique_data =  technique_data.dropna()
 
@@ -203,6 +260,17 @@ def process_technique_data(data,graph):
     database_tools.process_relationships(data,"Technique","Solves","Issue","SOLVES",'OUTGOING',graph)
 
 def process_simtool_data(data,simtool_data,graph):
+    """
+    Process simulation tool data and create simulation tool nodes in the graph.
+
+    Args:
+        data (pandas.DataFrame): A DataFrame containing simulation tool data.
+        simtool_data (pandas.DataFrame): A DataFrame containing specific simulation tool data.
+        graph: The Neo4j graph database connection.
+
+    Returns:
+        None
+    """
     simtool_data = data[['Name','Developer','Year_of_latest_release','Language', 'Customisation']]
     simtool_data =  simtool_data.dropna()
 
@@ -235,9 +303,19 @@ def process_simtool_data(data,simtool_data,graph):
                 SET r.Number_of_related_issues = 0    
                 SET r.Issue_Cost = 0 
         """
-    database_tools.run_neo_query(simtool_data,query,graph) # POSSIBLY NOT NESSECARY ANY MORE
+    database_tools.run_neo_query(simtool_data,query,graph) # POSSIBLY NOT NESSECARY
 
 def process_actor_data(data,graph):
+    """
+    Process actor data and create actor nodes in the graph.
+
+    Args:
+        data (pandas.DataFrame): A DataFrame containing actor data.
+        graph: The Neo4j graph database connection.
+
+    Returns:
+        None
+    """
     tool_data = data[['Name','Generated_Artifacts','Used_Aspects', 'Desired_Artifacts']]
     tool_data =  tool_data.dropna()
 
@@ -262,6 +340,22 @@ def process_actor_data(data,graph):
     database_tools.process_relationships(data,'Actor','Generated_Artifacts','Artifact','ACTOR_GENERATES','OUTGOING',graph)
     
 def apply_issue_cost(languagedata,tooldata,methoddata,graph):
+    """
+    Apply issue cost to languages, tools, and methods based on related issues.
+
+    This function calculates the issue cost for languages, tools, and methods in the graph based on the number
+    of related issues and their evaluated severity. It updates the 'Number_of_related_issues' and 'Issue_Cost'
+    properties for each node.
+
+    Args:
+        languagedata (pandas.DataFrame): A DataFrame containing language data.
+        tooldata (pandas.DataFrame): A DataFrame containing tool data.
+        methoddata (pandas.DataFrame): A DataFrame containing method data.
+        graph: The Neo4j graph database connection.
+
+    Returns:
+        None
+    """
      # counting issues related to languages
     language_data = languagedata[['Name']]
     language_data =  language_data.dropna()
