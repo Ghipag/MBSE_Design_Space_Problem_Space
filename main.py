@@ -73,14 +73,14 @@ def main():
 
         # demonstrating last years solution
         solution_minimum_path = ['SysML V1','Cameo','SEAM','Cameo Simulation Toolkit','Surrogate Modelling','Genetic Optimisation','Globally Optimal Design Parameters']
-        solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
-        database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
+        #solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
+        #database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
 
         # demonstrating upcoming solution
         solution_minimum_path = ['Capella Language','Capella','ARCADIA','Neural Network Assisted Language Modeling for Architecture Generation and Engineering']
-        solution_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
-        solution_full_path = network_analysis.identify_technique_outputs('Neural Network Assisted Language Modeling for Architecture Generation and Engineering',solution_path,graph)
-        database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
+        #solution_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
+        #solution_full_path = network_analysis.identify_technique_outputs('Neural Network Assisted Language Modeling for Architecture Generation and Engineering',solution_path,graph)
+        #database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
 
         #https://neo4j.com/labs/neosemantics/4.0/inference/
         # inference queries:
@@ -95,15 +95,15 @@ def main():
         """
 
         """
-        MATCH (technique:Technique)<-[:TAKES_AS_INPUT]-(artifact:Artifact)<-[:GENERATES]-(method:Method {uid:'SEAM'})
+        MATCH (technique:Technique)<-[:FORMS_INPUT_FOR]-(artifact:Artifact)<-[:GENERATES]-(method:Method {uid:'SEAM'})
         RETURN technique
         """
         """
-        MATCH (technique:Technique)<-[:TAKES_AS_INPUT]-(artifact:Artifact)<-[:GENERATES]-(method:Method)<-[:CAN_IMPLEMENT]-(tool:Tool{uid:'Cameo'})
+        MATCH (technique:Technique)<-[:FORMS_INPUT_FOR]-(artifact:Artifact)<-[:GENERATES]-(method:Method)<-[:CAN_IMPLEMENT]-(tool:Tool{uid:'Cameo'})
         RETURN technique
         """
         """
-        MATCH (technique:Technique)<-[:TAKES_AS_INPUT]-(artifact:Artifact)<-[:GENERATES]-(method:Method)<-[:CAN_IMPLEMENT]-(tool:Tool)<-[:AVAILABLE_IN]-(language:Language)
+        MATCH (technique:Technique)<-[:FORMS_INPUT_FOR]-(artifact:Artifact)<-[:GENERATES]-(method:Method)<-[:CAN_IMPLEMENT]-(tool:Tool)<-[:AVAILABLE_IN]-(language:Language)
         RETURN technique
         """
 

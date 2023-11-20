@@ -251,7 +251,7 @@ def process_technique_data(data,graph):
     database_tools.run_neo_query(technique_data,query,graph)
 
     #adding relationships to inputs
-    database_tools.process_relationships(data,'Technique','Inputs','Artifact','TAKES_AS_INPUT','INCOMING',graph)
+    database_tools.process_relationships(data,'Technique','Inputs','Artifact','FORMS_INPUT_FOR','INCOMING',graph)
     
     #adding relationships to outputs
     database_tools.process_relationships(data,'Technique','Outputs','Artifact','GENERATES','OUTGOING',graph)
