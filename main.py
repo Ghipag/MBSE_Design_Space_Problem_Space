@@ -59,7 +59,7 @@ def main():
         solution_start = network_analysis.set_solution_start(MBSE_environment,graph)
 
         # select set of techniques
-        techniques_list = ['Objective SysML Stereotypes','Constrained Genetic Optimisation','Design constraint and dependant variable SysML Stereotypes','Parametric Variability SysML Stereotypes','Design of experiments','Surrogate Modelling']
+        techniques_list = ['Constrained Genetic Optimisation','Surrogate Modelling']
         network_analysis.select_techniques(techniques_list,graph)
         data_extraction.apply_issue_cost(language_data,tool_data,method_data,graph)
 

@@ -77,7 +77,7 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
     original_initial_path = initial_path.copy(deep =True)
     solution_path,techniques_list = identify_solution_path_prereqs(initial_path,suggest_techniques,technique_data,techniques_list,tool_data,simtool_data,graph)
 
-    # update issues costs based on potenitally updated set of techniques
+    # update issues costs based on potentially updated set of techniques
     for technique in techniques_list:
         if technique not in solution_path['nodeNames'][0]:
             query="""
@@ -94,12 +94,14 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
     # now re run dijkstra's to see if still shortest path
     # Query creates graph projection (like a sub set of the main graph with relevant data), then runs dijkstra's algorithm and collects results
     updated_initial_path = identify_inital_path(startnode,endnode,scenario_data_list,technique_label,'comparison_check',graph)
-    updated_solution_path,techniques_list = identify_solution_path_prereqs(updated_initial_path,suggest_techniques,technique_data,techniques_list,tool_data,simtool_data,graph)
+    updated_solution_path,updated_techniques_list = identify_solution_path_prereqs(updated_initial_path,suggest_techniques,technique_data,techniques_list,tool_data,simtool_data,graph)
 
-    # mow check if any new steps exist in updated path -> if they do, re-run process again with updated context, until converged on solution
+    # now check if any new steps exist in updated path -> if they do, re-run process again with updated context, until converged on solution
+    print(original_initial_path['nodeNames'][0])
     for step in updated_solution_path['nodeNames'][0]:
+        print(step)
         if step not in original_initial_path['nodeNames'][0]:
-            identify_exploration_solution(startnode,endnode,scenario_data,technique_data,techniques_list,suggest_techniques,tool_data,simtool_data,graph)
+            identify_exploration_solution(startnode,endnode,scenario_data,technique_data,updated_techniques_list,suggest_techniques,tool_data,simtool_data,graph)
 
     return solution_path
 
