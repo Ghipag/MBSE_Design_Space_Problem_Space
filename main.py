@@ -61,7 +61,7 @@ def main():
         # select set of techniques
         techniques_list = ['Constrained Genetic Optimisation','Surrogate Modelling']
         network_analysis.select_techniques(techniques_list,graph)
-        data_extraction.apply_issue_cost(language_data,tool_data,method_data,graph)
+        #data_extraction.apply_issue_cost(language_data,tool_data,method_data,graph)
 
 
         #####################################################################

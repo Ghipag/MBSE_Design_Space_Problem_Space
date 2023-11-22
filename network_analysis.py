@@ -70,9 +70,10 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
         """
     initial_path = graph.run(query).to_data_frame()
     # add scenario context nodes (except last one)
-    for node in scenario_data_list:
-        if node is not startnode:
-            initial_path.nodeNames[0].append(node) 
+    if not initial_path.empty:
+        for node in scenario_data_list:
+            if node is not startnode:
+                initial_path.nodeNames[0].append(node) 
     # this result will not necessarily provide a total solution as some design technique inputs (artifacts) may be missing and need to be considered
     original_initial_path = initial_path.copy(deep =True)
     solution_path,techniques_list = identify_solution_path_prereqs(initial_path,suggest_techniques,technique_data,techniques_list,tool_data,simtool_data,graph)
