@@ -100,9 +100,9 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
     # now check if any new steps exist in updated path -> if they do, re-run process again with updated context, until converged on solution
     print(original_initial_path['nodeNames'][0])
     for step in updated_solution_path['nodeNames'][0]:
-        print(step)
+        print(f'step: {step}')
         if step not in original_initial_path['nodeNames'][0]:
-            identify_exploration_solution(startnode,endnode,scenario_data,technique_data,updated_techniques_list,suggest_techniques,tool_data,simtool_data,graph)
+            solution_path = identify_exploration_solution(startnode,endnode,scenario_data,technique_data,updated_techniques_list,suggest_techniques,tool_data,simtool_data,graph)
 
     return solution_path
 
@@ -298,7 +298,6 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
                                     for artifact_preReq in artifact_prereqs.preReq:
                                         if artifact_preReq['uid'] not in initial_path.nodeNames[0]:
                                             initial_path.nodeNames[0].append(artifact_preReq['uid'])
-                                            print(f'WOOOOOOO:{artifact_preReq["uid"]}')
                                             technique_list.append(artifact_preReq['uid'])
 
                                             added_new_node = True

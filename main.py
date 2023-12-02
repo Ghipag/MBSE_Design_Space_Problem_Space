@@ -68,6 +68,7 @@ def main():
         # Generating a candidate 'optimal' solution path from defined scenario
         #####################################################################
         candidate_path = network_analysis.identify_exploration_solution(solution_start,solution_end,MBSE_environment,technique_data,techniques_list,False,tool_data,simtool_data,graph)
+        print(candidate_path['path'][0])
         print(f"candidate solution issue cost: {candidate_path.totalCost[0]}")
         database_tools.generate_node_match_query(candidate_path.nodeNames[0])
 
