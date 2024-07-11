@@ -1,11 +1,11 @@
 Name,Developer,Year_of_latest_release,Tool,Method,Variability_Modelling,Simulation_Links,Customisation
-UML,OMG,IDK,Cameo;Enterprise Architect;Papyrus;Rapsody,OOSEM,None inbuilt,Good (though can be slow),Can be extended via profiles
-SysML V1,OMG,IDK,Cameo;Enterprise Architect;Papyrus;Rapsody,OOSEM;SEAM;MOFLT,Limited/none,Good (though can be slow),Can be extended via profiles
-SysML V2,OMG (Future release),IDK,Future Tools,Future Methods,Product line engineering and variability points,Good (though can be slow),Can be extended via extensible model libraries
-Capella Language,Eclipse,IDK,Capella,ARCADIA,None inbuilt,Limited (on third party tools),Open Source
-OPM Language,OPM/ISO,IDK,OPMCloud,OPM,Limited/none,"Animation,",Limited
+UML,OMG,IDK,Cameo;Enterprise_Architect;Papyrus;Rapsody,OOSEM,None inbuilt,Good (though can be slow),Can be extended via profiles
+SysML_V1,OMG,IDK,Cameo;Enterprise_Architect;Papyrus;Rapsody,OOSEM;SEAM;MOFLT,Limited/none,Good (though can be slow),Can be extended via profiles
+SysML_V2,OMG (Future release),IDK,Future_Tools,Future_Methods,Product line engineering and variability points,Good (though can be slow),Can be extended via extensible model libraries
+Capella_Language,Eclipse,IDK,Capella,ARCADIA,None inbuilt,Limited (on third party tools),Open Source
+OPM_Language,OPM/ISO,IDK,OPMCloud,OPM,Limited/none,"Animation,",Limited
 SDL,Vitech,IDK,GENSYS;TASTE,STRATA,Limited/none,Behaviour simulation in GENSYS,Is extensible
-Valispace Language,Valispace,IDK,Valispace,Valispace Method,Limited/none,Parametric,"Web based, has API"
-RML,RePoSyD,IDK,RePoSyD Tool,RePoSyD,Limited/none,Limited/none,Open source
-AADL,"SAE,2022",IDK,TASTE,TASTE Method,Limited/none,"Can be simulated,e.g. in TASTE for model base verification",can be extended via language annexes
-SLIM,COMPASS,IDK,COMPASS 3.0,COMPASS,Limited/none,"Performability analysis and others, focussed on safety and correctness",limited
+Valispace_Language,Valispace,IDK,Valispace,Valispace_Method,Limited/none,Parametric,"Web based, has API"
+RML,RePoSyD,IDK,RePoSyD_Tool,RePoSyD,Limited/none,Limited/none,Open source
+AADL,"SAE,2022",IDK,TASTE,TASTE_Method,Limited/none,"Can be simulated,e.g. in TASTE for model base verification",can be extended via language annexes
+SLIM,COMPASS,IDK,COMPASS_3.0,COMPASS,Limited/none,"Performability analysis and others, focussed on safety and correctness",limited

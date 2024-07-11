@@ -1,11 +1,11 @@
 Name,Developer,Year_of_latest_release,Language,Tool,Design_Space_Exploration,Artifacts
-ARCADIA,Ecplise/Thales,IDK,Capella Language,Capella,limited,Operational Analysis;Logical Architecture;Functional Architecture;Physical Architecture;Component Requirements
-OOSEM,Lockheed Martin and (SSCI),IDK,SysML V1,Cameo;Papyrus;Rapsody;Enterprise Architect,limited,Operational Analysis;Logical Architecture;Functional Architecture;Physical Architecture;Component Requirements
-RePoSyD,RePoSyD,IDK,RML,RePoSyD Tool,Limited,Logical Architecture;Functional Architecture;Physical Architecture;Verifacation Plan;Workpackages;Deliverables
-STRATA,Vitech,IDK,SDL,GENSYS,limited,Logical Architecture;Functional Architecture;Physical Architecture;Verifacation Plan
-OPM,OPM,IDK,OPM Language,OPMCloud,limited,Logical Architecture;Functional Architecture;Physical Architecture
-Valispace Method,Valispace,IDK,Valispace Language,Valispace,Limited,Logical Architecture;Functional Architecture;Physical Architecture;Parametric System Model;Component Requirements
-MOFLT,Airbus,IDK,SysML V1,Cameo;Papyrus;Rapsody;Enterprise Architect,Limited- but has tailoring in mind,Operational Analysis;Logical Architecture;Functional Architecture;Physical Architecture;Component Requirements
-COMPASS,COMPASS,IDK,SLIM,COMPASS 3.0,Limited,Operational Analysis;Logical Architecture;Functional Architecture;Physical Architecture;Model Verifacation
-SEAM,University of Bristol,2022,SysML V1,Cameo,Limited,Operational Analysis;Logical Architecture;Functional Architecture;Physical Architecture
-TASTE Method,TASTE,IDK,SDL;AADL,TASTE,Limited,Functional Architecture;Physical Architecture; Flight Software;Verifacation Tests
+ARCADIA,Ecplise/Thales,IDK,Capella_Language,Capella,limited,Operational_Analysis;Logical_Architecture;Functional_Architecture;Physical_Architecture;Component_Requirements
+OOSEM,Lockheed Martin and (SSCI),IDK,SysML_V1,Cameo;Papyrus;Rapsody;Enterprise_Architect,limited,Operational_Analysis;Logical_Architecture;Functional_Architecture;Physical_Architecture;Component_Requirements
+RePoSyD,RePoSyD,IDK,RML,RePoSyD_Tool,Limited,Logical_Architecture;Functional_Architecture;Physical_Architecture;Verifacation_Plan;Workpackages;Deliverables
+STRATA,Vitech,IDK,SDL,GENSYS,limited,Logical_Architecture;Functional_Architecture;Physical_Architecture;Verifacation_Plan
+OPM,OPM,IDK,OPM_Language,OPMCloud,limited,Logical_Architecture;Functional_Architecture;Physical_Architecture
+Valispace_Method,Valispace,IDK,Valispace_Language,Valispace,Limited,Logical_Architecture;Functional_Architecture;Physical_Architecture;Parametric_System_Model;Component_Requirements
+MOFLT,Airbus,IDK,SysML_V1,Cameo;Papyrus;Rapsody;Enterprise_Architect,Limited- but has tailoring in mind,Operational_Analysis;Logical_Architecture;Functional_Architecture;Physical_Architecture;Component_Requirements
+COMPASS,COMPASS,IDK,SLIM,COMPASS_3.0,Limited,Operational_Analysis;Logical_Architecture;Functional_Architecture;Physical_Architecture;Model_Verifacation
+SEAM,University of Bristol,2022,SysML_V1,Cameo,Limited,Operational_Analysis;Logical_Architecture;Functional_Architecture;Physical_Architecture
+TASTE_Method,TASTE,IDK,SDL;AADL,TASTE,Limited,Functional_Architecture;Physical_Architecture;_Flight_Software;Verifacation_Tests

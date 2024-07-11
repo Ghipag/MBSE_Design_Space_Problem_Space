@@ -69,6 +69,7 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
             ORDER BY index
         """
     initial_path = graph.run(query).to_data_frame()
+    print(initial_path)
     # add scenario context nodes (except last one)
     if not initial_path.empty:
         for node in scenario_data_list:
@@ -176,6 +177,7 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
         initial_path = pd.DataFrame(initial_path_dict)
 
     # identifying chosen tool, for use later in checking simulation tool selection
+    print(initial_path)
     for node in initial_path.nodeNames[0]:
         if node in tool_data['Name'].values:
             chosen_tool = node
@@ -397,3 +399,15 @@ def identify_technique_outputs(technique,solution_path,graph):
     for output in technique_outputs.output:
         solution_path.nodeNames[0].append(output['uid'])
     return solution_path
+
+def deselect_irrelevant_techniques(varaibility_types,graph):
+    label_list_string = ""
+    for var_type in varaibility_types:
+        label_list_string =  label_list_string + ':'+var_type 
+    print(label_list_string)
+    query = """
+        MATCH (n:Technique)
+        WHERE not n"""+label_list_string+"""
+        REMOVE n:Technique
+        """
+    graph.run(query)

@@ -250,6 +250,27 @@ def process_technique_data(data,graph):
 
     database_tools.run_neo_query(technique_data,query,graph)
 
+    # process variabiilty type
+    input_data = data[['Name','Variability_Type']]
+    
+    #drop empty entries
+    input_data =  input_data.dropna()
+
+    # Convert data frame to list of dictionaries
+    # Neo4j UNWIND query expects a list of dictionaries
+    # for bulk insertion
+    input_data = list(input_data.T.to_dict().values())
+        
+    # specifically adding variabiilty types for each technique
+    for row in input_data:
+        for var_type in row['Variability_Type'].split(';'):
+            query = """
+                    MATCH (n:Technique {uid:'"""+row['Name']+"""'})
+                    SET n:"""+var_type+"""
+                                
+                """
+            database_tools.run_neo_query(input_data,query,graph)
+
     #adding relationships to inputs
     database_tools.process_relationships(data,'Technique','Inputs','Artifact','FORMS_INPUT_FOR','INCOMING',graph)
     
