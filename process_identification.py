@@ -48,6 +48,7 @@ def identify_process(MBSE_environment = {'language':'SysML_V1',
     data_extraction.process_technique_data(technique_data,graph)
     actor_data = data_extraction.read_data('Actors')
     data_extraction.process_actor_data(actor_data,graph)
+
     
     #####################################################################
     # Defintion of Scenario
@@ -62,7 +63,8 @@ def identify_process(MBSE_environment = {'language':'SysML_V1',
 
     # select set of techniques
     network_analysis.select_techniques(techniques_list,graph)
-    #data_extraction.apply_issue_cost(language_data,tool_data,method_data,graph)
+    data_extraction.apply_issue_cost(language_data,tool_data,method_data,graph)
+    exit()
 
 
     #####################################################################
