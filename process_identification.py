@@ -19,14 +19,16 @@ graph = Graph("bolt://127.0.0.1:7687", auth=('neo4j', 'test'))
 #graph.run("CREATE CONSTRAINT FOR (m:Method) REQUIRE m.uid IS UNIQUE;")
 #graph.run("CREATE CONSTRAINT FOR (w:WorkType) REQUIRE w.name IS UNIQUE;")
 
-def identify_process(MBSE_environment = {'language':'SysML_V1',
-                            'tool':'Cameo',
-                            'method':'SEAM',
-                            'simulation_tool':'Cameo_Simulation_Toolkit'},
+def identify_process(MBSE_environment = {'Language':'SysML_V1',
+                            'Tool':'Cameo',
+                            'Method':'SEAM',
+                            'Simulation_Tool':'Cameo_Simulation_Toolkit'}, #Design_Constraints
         solution_end = 'Globally_Optimal_Design_Parameters',
-        techniques_list = ['Surrogate_Modelling','Constrained_Genetic_Optimisation'],
-        suggest_techniques = False,
+        #'Globally_Optimal_Design_Parameters',
+        techniques_list = [],
+        suggest_techniques = True,
         varaibility_types = ['Parameter']):
+        #'Surrogate_Modelling','Constrained_Genetic_Optimisation'
 
     #####################################################################
     # Setup and loading of database data
@@ -56,15 +58,18 @@ def identify_process(MBSE_environment = {'language':'SysML_V1',
     # the available techniques and desired outputs
     #####################################################################
 
-    # define desired outcome
 
     # define scenario context, i.e. MBSE environment
-    solution_start = network_analysis.set_solution_start(MBSE_environment,graph)
+    solution_start =  MBSE_environment['Language']#network_analysis.set_solution_start(MBSE_environment,graph)
+    #MBSE_environment['Language']
 
     # select set of techniques
     network_analysis.select_techniques(techniques_list,graph)
     data_extraction.apply_issue_cost(language_data,tool_data,method_data,graph)
-    # exit()
+
+    # select given MBSE environment elements(language, tool and method) in data base
+    network_analysis.select_environment_elements(MBSE_environment,graph)
+
 
 
     #####################################################################
@@ -75,11 +80,11 @@ def identify_process(MBSE_environment = {'language':'SysML_V1',
         network_analysis.deselect_irrelevant_techniques(varaibility_types,graph)
 
 
-    candidate_path = network_analysis.identify_exploration_solution(solution_start,solution_end,MBSE_environment,technique_data,techniques_list,suggest_techniques,tool_data,simtool_data,graph)
-    print(candidate_path['path'][0])
+    candidate_path = network_analysis.identify_exploration_solution(solution_start,solution_end,MBSE_environment,technique_data,techniques_list,suggest_techniques,language_data,tool_data,method_data,simtool_data,graph)
+    print(candidate_path)
+    # print(candidate_path['path'][0])
     print(f"candidate solution issue cost: {candidate_path.totalCost[0]}")
     process_query = database_tools.generate_node_match_query(candidate_path.nodeNames[0])
-    # print(f"path query is:\n {process_query}")
     return candidate_path.totalCost[0],process_query
 
     # demonstrating last years solution

@@ -323,6 +323,8 @@ def process_simtool_data(data,simtool_data,graph):
             CREATE (method)-[r32:METHOD_RELATED_SIMTOOL]->(simtool)
                 SET r.Number_of_related_issues = 0    
                 SET r.Issue_Cost = 0 
+                SET r32.Number_of_related_issues = 0    
+                SET r32.Issue_Cost = 0
         """
     database_tools.run_neo_query(simtool_data,query,graph) # POSSIBLY NOT NESSECARY
 
@@ -463,4 +465,24 @@ def apply_issue_cost(languagedata,tooldata,methoddata,graph):
             """
 
         graph.run(query)
+    
+    # add issue cost entries to techniques and artifacts for later process identification
+
+    # query = """
+    #             MATCH 
+    #                 (n:Technique)<-[r2]-()
+    #             WITH r2
+    #             SET r2.Issue_Cost = 0
+    #         """
+
+    # graph.run(query)
+
+    # query = """
+    #             MATCH 
+    #                 (n:Artifact)<-[r2]-()
+    #             WITH r2
+    #             SET r2.Issue_Cost = 0
+    #         """
+
+    # graph.run(query)
 

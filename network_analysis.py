@@ -1,6 +1,7 @@
 import pandas as pd
+import data_extraction
 
-def identify_exploration_solution(startnode,endnode,scenario_data,technique_data,techniques_list,suggest_techniques,tool_data,simtool_data,graph):
+def identify_exploration_solution(startnode,endnode,scenario_data,technique_data,techniques_list,suggest_techniques,language_data,tool_data,method_data,simtool_data,graph):
     """
     Identify a solution path in the exploration graph between a start node and an end node based on scenario and context data.
 
@@ -38,14 +39,44 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
     # first identify if allowed to suggest extra techniques or use only selected
     if suggest_techniques:
         technique_label = 'Technique'
-    else:
+    else:   
         technique_label = 'Selected_Technique'
 
+    # then for languages
+    if 'Language' in scenario_data.keys():
+
+        language_label = 'Selected_Language'
+    else:
+        language_label = 'Language'
+
+    # then for tools
+    if 'Tool' in scenario_data.keys():
+        tool_label = 'Selected_Tool'
+    else:
+        tool_label = 'Tool'
+
+    # then for methods
+    if 'Method' in scenario_data.keys():
+        method_label = 'Selected_Method'
+    else:
+        method_label = 'Method'
+
+    # then for languages
+    if 'Simulation_Tool' in scenario_data.keys():
+        simulation_tool_label = 'Selected_Simulation_Tool'
+    else:
+        simulation_tool_label = 'Simulation_Tool'
+        
+    print('AAA')
+    print(method_label,tool_label,simulation_tool_label,language_label)
+
     # Query creates graph projection (like a sub set of the main graph with relevant data), then runs dijkstra's algorithm and collects results
+    #'"""+ method_label+"""', '"""+tool_label+"""','"""+simulation_tool_label+"""','"""+language_label+"""'
+    #'Method','Tool','Language','Simulation_Tool'
     query = """
             CALL gds.graph.project(
                 'solutionGraph',
-                ['Method', 'Tool','Simulation_Tool','Language','Artifact','"""+technique_label+"""'],
+                ['"""+ method_label+"""', '"""+tool_label+"""','"""+simulation_tool_label+"""','"""+language_label+"""','Artifact','"""+technique_label+"""'],
                 ['AVAILABLE_IN','CAN_IMPLEMENT','METHOD_RELATED_SIMTOOL','EXECUTES','GENERATES','FORMS_INPUT_FOR'],
                 {relationshipProperties: 'Issue_Cost'}
             )
@@ -69,19 +100,43 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
             ORDER BY index
         """
     initial_path = graph.run(query).to_data_frame()
+    print('>>>')
     print(initial_path)
     # add scenario context nodes (except last one)
     if not initial_path.empty:
         for node in scenario_data_list:
-            if node is not startnode:
+            if not node in initial_path.nodeNames[0]:
                 initial_path.nodeNames[0].append(node) 
+
     # this result will not necessarily provide a total solution as some design technique inputs (artifacts) may be missing and need to be considered
     original_initial_path = initial_path.copy(deep =True)
+    original_techniques_list = techniques_list
     solution_path,techniques_list = identify_solution_path_prereqs(initial_path,suggest_techniques,technique_data,techniques_list,tool_data,simtool_data,graph)
+    original_total_cost = solution_path['totalCost'][0]
 
     # update issues costs based on potentially updated set of techniques
+    print('EEE')
+    print(techniques_list)
+    print(original_techniques_list)
+    print(original_initial_path['nodeNames'][0])
+
+    # first check for newly techniques and update accordingly
     for technique in techniques_list:
+        if technique not in original_techniques_list:
+
+            query="""
+            MATCH(technique:Technique{uid:'"""+technique+"""'})-[r:SOLVES]->(issue)
+            WITH issue, technique
+            SET
+                issue.Evaluated_Severity = 0
+                SET technique:Selected_Technique
+            """
+            graph.run(query)
+    
+    # now check for deselected techniques and update accordingly
+    for technique in original_techniques_list:
         if technique not in solution_path['nodeNames'][0]:
+            print('yup ', technique)
             query="""
             MATCH(technique:Technique{uid:'"""+technique+"""'})-[r:SOLVES]->(issue)
             WITH issue, technique
@@ -90,24 +145,26 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
                 REMOVE technique:Selected_Technique
             """
             graph.run(query)
-        else:
-            select_techniques([technique],graph)
 
     # now re run dijkstra's to see if still shortest path
+    data_extraction.apply_issue_cost(language_data,tool_data,method_data,graph)
     # Query creates graph projection (like a sub set of the main graph with relevant data), then runs dijkstra's algorithm and collects results
-    updated_initial_path = identify_inital_path(startnode,endnode,scenario_data_list,technique_label,'comparison_check',graph)
+    updated_initial_path = identify_inital_path(startnode,endnode,scenario_data_list,method_label,tool_label,simulation_tool_label,language_label,technique_label,'comparison_check',graph)
     updated_solution_path,updated_techniques_list = identify_solution_path_prereqs(updated_initial_path,suggest_techniques,technique_data,techniques_list,tool_data,simtool_data,graph)
 
+    updated_total_cost = updated_solution_path['totalCost'][0]
+
+    print('Compare: ',original_total_cost,updated_total_cost)
+
     # now check if any new steps exist in updated path -> if they do, re-run process again with updated context, until converged on solution
-    print(original_initial_path['nodeNames'][0])
     for step in updated_solution_path['nodeNames'][0]:
         print(f'step: {step}')
         if step not in original_initial_path['nodeNames'][0]:
-            solution_path = identify_exploration_solution(startnode,endnode,scenario_data,technique_data,updated_techniques_list,suggest_techniques,tool_data,simtool_data,graph)
+            updated_solution_path = identify_exploration_solution(startnode,endnode,scenario_data,technique_data,updated_techniques_list,suggest_techniques,language_data,tool_data,method_data,simtool_data,graph)
 
-    return solution_path
+    return updated_solution_path
 
-def identify_inital_path(startnode,endnode,scenario_data_list,technique_label,subgraph_name,graph):
+def identify_inital_path(startnode,endnode,scenario_data_list,method_label,tool_label,simulation_tool_label,language_label,technique_label,subgraph_name,graph):
     # Query creates graph projection (like a sub set of the main graph with relevant data), then runs dijkstra's algorithm and collects results
     # try to remove old graph (will raise error if does not exist)
     try:
@@ -118,10 +175,13 @@ def identify_inital_path(startnode,endnode,scenario_data_list,technique_label,su
         graph.run(query)
     except:
         print("graph already exists")
+
+    print('BBB')
+    print(method_label,tool_label,simulation_tool_label,language_label)
     query = """
             CALL gds.graph.project(
                 '"""+subgraph_name+"""',
-                ['Method', 'Tool','Simulation_Tool','Language','Artifact','"""+technique_label+"""'],
+                ['"""+ method_label+"""', '"""+tool_label+"""','"""+simulation_tool_label+"""','"""+language_label+"""','Artifact','"""+technique_label+"""'],
                 ['AVAILABLE_IN','CAN_IMPLEMENT','METHOD_RELATED_SIMTOOL','EXECUTES','GENERATES','FORMS_INPUT_FOR'],
                 {relationshipProperties: 'Issue_Cost'}
             )
@@ -177,6 +237,7 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
         initial_path = pd.DataFrame(initial_path_dict)
 
     # identifying chosen tool, for use later in checking simulation tool selection
+    print('CCC')
     print(initial_path)
     for node in initial_path.nodeNames[0]:
         if node in tool_data['Name'].values:
@@ -186,7 +247,8 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
     simtool_chosen = False
     for node in initial_path.nodeNames[0]:
         if node in simtool_data['Name'].values:
-            simtool_chosen = True  
+            simtool_chosen = True 
+
 
     # firstly identify techniques in solution path
     technique_list = []
@@ -200,15 +262,15 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
     else:
         technique_label = 'Selected_Technique'
     
-    # loop until all artifact and technique prerequsites are met
+    # loop until all artifact and technique prerequisites are met
     loops = 0
-    solution_incompelte = True
-    while solution_incompelte and loops<100:
+    solution_incomplete = True
+    while solution_incomplete and loops<100:
         added_new_node = False
         # now find required artifacts for those techniques
         for technique in technique_list:
 
-            # need to allow for alternative technique not nesseacry to generate an artifact and not selected by the user
+            # need to allow for alternative technique not necessary to generate an artifact and not selected by the user
             if (technique not in techniques_list) and (not suggest_techniques):
                 pass
             else:
@@ -218,7 +280,15 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
                 """
                 technique_prereqs = graph.run(query).to_data_frame()
                 # now add any artifacts not included in the initial path
+                # print('DDD')
+                # print(technique_list)
+                # print(technique_data)
+                # print('technique is',technique, technique_label)
+                # print(technique_prereqs)
+                # print(initial_path.nodeNames[0])
+                # print('simtool chosen',simtool_chosen)
                 for preReq in technique_prereqs.preReq:
+                    print('pre-req is:',preReq['uid'])
                     if preReq['uid'] not in initial_path.nodeNames[0]:
                         initial_path.nodeNames[0].append(preReq['uid'])
                         added_new_node = True
@@ -249,7 +319,6 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
 
                             # as Executable System Model is a special case of artifact that is generated specifally by simulation tools,
                             # need to handle this special case and only select the best simulation tool (if one has not already been selected)
-
                             if preReq['uid'] == 'Executable System Model':
                                 if not simtool_chosen: # don't add simtool if already chosen
                                     try:
@@ -293,16 +362,20 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
                                     artifact_prereqs = artifact_prereqs.drop(artifact_prereqs.index.values)
                                     artifact_prereqs = artifact_prereqs.append({'preReq':{'uid':usable_simtool}},ignore_index=True)
 
+
                             # now add any techniques not included in the initial path (but not simtools)
                             if preReq['uid'] != 'Executable System Model':
                                 
                                 if not artifact_prereqs.empty:
                                     for artifact_preReq in artifact_prereqs.preReq:
                                         if artifact_preReq['uid'] not in initial_path.nodeNames[0]:
-                                            initial_path.nodeNames[0].append(artifact_preReq['uid'])
-                                            technique_list.append(artifact_preReq['uid'])
+                                            if artifact_preReq['uid'] in simtool_data['Name'].values and simtool_chosen:
+                                                print(f"Skipping extra simtool:{preReq['uid']}")
+                                            else:
+                                                initial_path.nodeNames[0].append(artifact_preReq['uid'])
+                                                technique_list.append(artifact_preReq['uid'])
 
-                                            added_new_node = True
+                                                added_new_node = True
 
         # update selected technique list and artifact list
         technique_list = []
@@ -312,7 +385,7 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
 
         # finally if no new nodes have been added, break the main search loop
         if added_new_node is False:
-            solution_incompelte = False
+            solution_incomplete = False
 
         loops+=1
     return  initial_path,technique_list
@@ -341,6 +414,55 @@ def select_techniques(techniques_list,graph):
         """
         graph.run(query)
 
+def deselect_techniques(techniques_list,graph):
+    """
+    deselect a list of techniques and unmark them as 'Selected_Technique' in the graph.
+
+    This function takes a list of technique names and unmarks each technique as 'Selected_Technique' in the Neo4j graph
+    database. It also updates the 'Evaluated_Severity' property of any issues solved by the selected techniques to their original.
+
+    Args:
+        techniques_list (list): A list of technique names to be deselected.
+        graph: The Neo4j graph database object.
+
+    Returns:
+        None
+    """
+    for technique in techniques_list:
+        query="""
+            MATCH(technique:Technique{uid:'"""+technique+"""'})-[r:SOLVES]->(issue)
+            WITH issue, technique
+            SET
+                issue.Evaluated_Severity = 0
+                REMOVE technique:Selected_Technique
+        """
+        graph.run(query)
+
+def select_environment_elements(MBSE_environment,graph):
+    """
+    Select a list of MBSE environment elements and mark them as 'Selected' in the graph.
+
+    This function takes a list of MBSE environment element names and marks each element as 'Selected' in the Neo4j graph
+    database.
+
+    Args:
+        MBSE_environment (dict): A dict of technique MBSE environment elements to be selected.
+        graph: The Neo4j graph database object.
+
+    Returns:
+        None
+    """
+    for environment_element_key in MBSE_environment:
+        environment_element = MBSE_environment[environment_element_key]
+
+        query="""
+            MATCH(environment_element:"""+environment_element_key+""" {uid:'"""+environment_element+"""'})
+            SET environment_element:Selected_"""+environment_element_key+"""
+        """
+            
+        print(query)
+        graph.run(query)
+
 def set_solution_start(Scenario_context,graph):
     """
     Determine the starting point for identifying a solution based on the provided Scenario_context.
@@ -359,12 +481,12 @@ def set_solution_start(Scenario_context,graph):
     """
     
     # dict defining order of steps in conceptual MBSE process model
-    steps = {'language':1,
-            'tool':2,
-            'method':3,
-            'simulation_tool':4,
-            'artifacts':5,
-            'technique':6}
+    steps = {'Language':1,
+            'Tool':2,
+            'Method':3,
+            'Simulation_Tool':4,
+            'Artifact':5,
+            'Technique':6}
 
     # now find latest step included in Scenario_context
     final_step = 0
