@@ -24,7 +24,7 @@ def identify_process(MBSE_environment = {'language':'SysML_V1',
                             'method':'SEAM',
                             'simulation_tool':'Cameo_Simulation_Toolkit'},
         solution_end = 'Globally_Optimal_Design_Parameters',
-        techniques_list = ['Constrained_Genetic_Optimisation','Surrogate_Modelling'],
+        techniques_list = ['Surrogate_Modelling','Constrained_Genetic_Optimisation'],
         suggest_techniques = False,
         varaibility_types = ['Parameter']):
 
@@ -64,7 +64,7 @@ def identify_process(MBSE_environment = {'language':'SysML_V1',
     # select set of techniques
     network_analysis.select_techniques(techniques_list,graph)
     data_extraction.apply_issue_cost(language_data,tool_data,method_data,graph)
-    exit()
+    # exit()
 
 
     #####################################################################
@@ -79,13 +79,13 @@ def identify_process(MBSE_environment = {'language':'SysML_V1',
     print(candidate_path['path'][0])
     print(f"candidate solution issue cost: {candidate_path.totalCost[0]}")
     process_query = database_tools.generate_node_match_query(candidate_path.nodeNames[0])
-    print(f"path query is:\n {process_query}")
+    # print(f"path query is:\n {process_query}")
     return candidate_path.totalCost[0],process_query
 
     # demonstrating last years solution
     solution_minimum_path = ['SysML V1','Cameo','SEAM','Cameo Simulation Toolkit','Surrogate Modelling','Genetic Optimisation','Globally Optimal Design Parameters']
-    #solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
-    #database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
+    solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
+    database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
 
     # demonstrating upcoming solution
     solution_minimum_path = ['Capella Language','Capella','ARCADIA','Neural Network Assisted Language Modeling for Architecture Generation and Engineering']
@@ -118,5 +118,8 @@ def identify_process(MBSE_environment = {'language':'SysML_V1',
     RETURN technique
     """
 
+    """
+    MATCH (technique:Technique)-[:SOLVES]->(artifact:Issue)-[:AFFECTS]->(method:Method {uid:'SEAM'}) RETURN technique
+    """
 if __name__ == "__main__":
     identify_process()
