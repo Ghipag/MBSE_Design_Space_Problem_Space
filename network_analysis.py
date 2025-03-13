@@ -101,7 +101,7 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
         """
     initial_path = graph.run(query).to_data_frame()
     print('>>>')
-    print(initial_path)
+    print(initial_path.nodeNames[0])
     # add scenario context nodes (except last one)
     if not initial_path.empty:
         for node in scenario_data_list:

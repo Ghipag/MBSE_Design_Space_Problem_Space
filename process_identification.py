@@ -19,6 +19,53 @@ graph = Graph("bolt://127.0.0.1:7687", auth=('neo4j', 'test'))
 #graph.run("CREATE CONSTRAINT FOR (m:Method) REQUIRE m.uid IS UNIQUE;")
 #graph.run("CREATE CONSTRAINT FOR (w:WorkType) REQUIRE w.name IS UNIQUE;")
 
+def test_for_all_artifacts():
+
+    # load all info initially
+    database_tools.clear_database(graph)
+    data_extraction.process_Ontology_data(graph)
+    language_data = data_extraction.read_data('Languages')
+    data_extraction.process_language_data(language_data,graph)
+    tool_data = data_extraction.read_data('Tools')
+    data_extraction.process_tool_data(tool_data,graph)
+    method_data = data_extraction.read_data('Methods')
+    data_extraction.process_method_data(method_data,graph)
+    simtool_data = data_extraction.read_data('SimTools')
+    data_extraction.process_simtool_data(simtool_data,tool_data,graph)
+    issue_data = data_extraction.read_data('Issues')
+    data_extraction.process_issue_data(issue_data,graph)
+    technique_data = data_extraction.read_data('Techniques')
+    data_extraction.process_technique_data(technique_data,graph)
+    actor_data = data_extraction.read_data('Actors')
+    data_extraction.process_actor_data(actor_data,graph)
+
+    # get list of artifacts
+    query = """
+                    MATCH(artifact:Artifact)
+                    RETURN artifact
+                """
+    artifacts = graph.run(query).to_data_frame()
+
+    artifact_list = []
+
+    for artifact in artifacts.artifact:
+        artifact_list.append(artifact['uid'])
+
+
+
+    # for each, check can find a path
+    path_costs = []
+    for artifact in artifact_list:
+        path_costs.append(identify_process(MBSE_environment = {'Language':'SysML_V1',
+                                'Tool':'Cameo',
+                                'Method':'SEAM',
+                                'Simulation_Tool':'Cameo_Simulation_Toolkit'}, #Design_Constraints
+            solution_end = artifact,
+            techniques_list = [],
+            suggest_techniques = True,
+            varaibility_types = ['Parameter']))
+
+
 def identify_process(MBSE_environment = {'Language':'SysML_V1',
                             'Tool':'Cameo',
                             'Method':'SEAM',
@@ -88,12 +135,12 @@ def identify_process(MBSE_environment = {'Language':'SysML_V1',
     return candidate_path.totalCost[0],process_query
 
     # demonstrating last years solution
-    solution_minimum_path = ['SysML V1','Cameo','SEAM','Cameo Simulation Toolkit','Surrogate Modelling','Genetic Optimisation','Globally Optimal Design Parameters']
-    solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
-    database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
+    # solution_minimum_path = ['SysML V1','Cameo','SEAM','Cameo Simulation Toolkit','Surrogate Modelling','Genetic Optimisation','Globally Optimal Design Parameters']
+    # solution_full_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
+    # database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
 
-    # demonstrating upcoming solution
-    solution_minimum_path = ['Capella Language','Capella','ARCADIA','Neural Network Assisted Language Modeling for Architecture Generation and Engineering']
+    # # demonstrating upcoming solution
+    # solution_minimum_path = ['Capella Language','Capella','ARCADIA','Neural Network Assisted Language Modeling for Architecture Generation and Engineering']
     #solution_path = network_analysis.identify_solution_path_prereqs(solution_minimum_path,True,technique_data,techniques_list,tool_data,simtool_data,graph)
     #solution_full_path = network_analysis.identify_technique_outputs('Neural Network Assisted Language Modeling for Architecture Generation and Engineering',solution_path,graph)
     #database_tools.generate_node_match_query(solution_full_path.nodeNames[0])
