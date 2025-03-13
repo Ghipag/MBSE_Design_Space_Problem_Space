@@ -100,6 +100,9 @@ def identify_exploration_solution(startnode,endnode,scenario_data,technique_data
             ORDER BY index
         """
     initial_path = graph.run(query).to_data_frame()
+    if 'nodeNames' not in initial_path.keys():
+        # abort if no path was found
+        return initial_path
     print('>>>')
     print(initial_path.nodeNames[0])
     # add scenario context nodes (except last one)
@@ -281,10 +284,10 @@ def identify_solution_path_prereqs(initial_path,suggest_techniques,technique_dat
                 technique_prereqs = graph.run(query).to_data_frame()
                 # now add any artifacts not included in the initial path
                 # print('DDD')
-                # print(technique_list)
+                print(technique_list)
                 # print(technique_data)
-                # print('technique is',technique, technique_label)
-                # print(technique_prereqs)
+                print('technique is',technique, technique_label)
+                print(technique_prereqs)
                 # print(initial_path.nodeNames[0])
                 # print('simtool chosen',simtool_chosen)
                 for preReq in technique_prereqs.preReq:

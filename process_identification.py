@@ -1,7 +1,10 @@
 from py2neo import Graph
+import pandas as pd
+from pycirclize import Circos
 import data_extraction
 import database_tools
 import network_analysis
+import numpy as np
 
 
 #####################################################################
@@ -51,19 +54,80 @@ def test_for_all_artifacts():
     for artifact in artifacts.artifact:
         artifact_list.append(artifact['uid'])
 
+    # get list of available mathos
+    query = """
+                    MATCH(method:Method)
+                    RETURN method
+                """
+    methods = graph.run(query).to_data_frame()
+
+    method_list = []
+
+    for method in methods.method:
+        method_list.append(method['uid'])
 
 
     # for each, check can find a path
-    path_costs = []
-    for artifact in artifact_list:
-        path_costs.append(identify_process(MBSE_environment = {'Language':'SysML_V1',
+    method_list = ['SEAM']
+    paths = []
+    for method in method_list:
+        for artifact in artifact_list:
+            paths.append(identify_process(MBSE_environment = {'Language':'SysML_V1',
                                 'Tool':'Cameo',
-                                'Method':'SEAM',
+                                'Method':method,
                                 'Simulation_Tool':'Cameo_Simulation_Toolkit'}, #Design_Constraints
-            solution_end = artifact,
-            techniques_list = [],
-            suggest_techniques = True,
-            varaibility_types = ['Parameter']))
+                        solution_end = artifact,
+                        techniques_list = [],
+                        suggest_techniques = True,
+                        varaibility_types = ['Parameter']))
+            
+    columns = ['setup_info', 'Path Issue Cost', 'Path Query']
+    results_df = pd.DataFrame(paths, columns=columns)
+        
+    results_df.to_csv('suggested_process_paths.csv')
+
+    # plotting on chord diagram   
+    # need to post process data
+    # first check number of valid paths
+    no_valid_paths = 0
+    for path in paths:       
+        if path[1] is not 'DNF':
+            no_valid_paths += 1
+
+
+    row_names = []
+    col_names = ['SEAM']
+    matrix_data = []
+    index = 0
+    row_data = np.zeros(no_valid_paths)
+    for path in paths:       
+        if path[1] is not 'DNF':
+            row_names.append(path[0].split("'}")[1].split("['")[0])
+            # col_names.append()
+            path_cost= path[1]
+            row_data[index] = path_cost
+            print(row_data)
+            index += 1
+            
+    matrix_data.append(row_data)
+
+    print(matrix_data)
+    print(row_names)
+    print(col_names)
+    matrix_df = pd.DataFrame(matrix_data, index=col_names, columns=row_names)
+    print(matrix_data)
+
+    # Initialize from matrix (Can also directly load tsv matrix file)
+    circos = Circos.initialize_from_matrix(
+        matrix_df,
+        space=3,
+        r_lim=(93, 100),
+        cmap="tab10",
+        ticks_interval=500,
+        label_kws=dict(r=94, size=12, color="white"),
+    )
+
+    circos.savefig("chord_diagram01.png")
 
 
 def identify_process(MBSE_environment = {'Language':'SysML_V1',
@@ -130,9 +194,14 @@ def identify_process(MBSE_environment = {'Language':'SysML_V1',
     candidate_path = network_analysis.identify_exploration_solution(solution_start,solution_end,MBSE_environment,technique_data,techniques_list,suggest_techniques,language_data,tool_data,method_data,simtool_data,graph)
     print(candidate_path)
     # print(candidate_path['path'][0])
-    print(f"candidate solution issue cost: {candidate_path.totalCost[0]}")
-    process_query = database_tools.generate_node_match_query(candidate_path.nodeNames[0])
-    return candidate_path.totalCost[0],process_query
+    setup_description = str(MBSE_environment)+'_'+solution_end+'_'+str(varaibility_types)
+    total_cost = 'DNF'
+    process_query = ''
+    if 'totalCost' in candidate_path.keys():
+        total_cost = candidate_path.totalCost[0]
+        print(f"candidate solution issue cost: {total_cost}")
+        process_query = database_tools.generate_node_match_query(candidate_path.nodeNames[0])
+    return setup_description,total_cost,process_query
 
     # demonstrating last years solution
     # solution_minimum_path = ['SysML V1','Cameo','SEAM','Cameo Simulation Toolkit','Surrogate Modelling','Genetic Optimisation','Globally Optimal Design Parameters']
@@ -174,4 +243,4 @@ def identify_process(MBSE_environment = {'Language':'SysML_V1',
     MATCH (technique:Technique)-[:SOLVES]->(artifact:Issue)-[:AFFECTS]->(method:Method {uid:'SEAM'}) RETURN technique
     """
 if __name__ == "__main__":
-    identify_process()
+    test_for_all_artifacts()
